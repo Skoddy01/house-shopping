@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>House Shopping List</title>
+<style>
+  :root{
+    --green:#143c2b; --green-2:#1c5138; --green-txt:#20573d;
+    --gold:#c08a2a; --gold-txt:#8a6516; --gold-bg:#fdf3dc; --gold-br:#e8c97a;
+    --cream:#f2f1ea; --card:#fff; --line:#e7e5db; --line-2:#d9d7cb;
+    --mute:#7b7b72; --red:#c0503c; --red-br:#e3b4aa; --chip-bg:#eaf2ec;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--cream);color:#1e1e1a;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:16px;-webkit-font-smoothing:antialiased;padding-bottom:120px;
+  }
+  button{font:inherit;color:inherit;cursor:pointer}
+  input,select{font:inherit}
+
+  .tabs{position:sticky;top:0;z-index:40;background:var(--green);display:flex;gap:4px;padding:0 14px}
+  .tab{background:none;border:0;padding:16px 12px 13px;color:#a9c3b4;font-weight:700;font-size:17px;
+       display:flex;align-items:center;gap:9px;border-bottom:3px solid transparent}
+  .tab.on{color:#fff;border-bottom-color:var(--gold)}
+  .tab .n{background:rgba(255,255,255,.14);color:#dcebe2;border-radius:999px;min-width:26px;padding:2px 8px;font-size:13px;text-align:center}
+  .tab.on .n{background:var(--gold);color:#2a1d02}
+
+  .wrap{max-width:1040px;margin:0 auto;padding:16px 14px 20px}
+  .titlebar{background:#fbfaf4;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
+  .titlebar input{border:0;background:none;width:100%;font-size:22px;font-weight:700;color:#1e1e1a}
+  .titlebar input:focus{outline:none}
+  .search{display:flex;align-items:center;gap:10px;background:#fbfaf4;border:1px solid var(--line);
+          border-radius:var(--radius);padding:14px 18px;margin-bottom:14px}
+  .search svg{flex:none;opacity:.45}
+  .search input{border:0;background:none;width:100%;font-size:17px}
+  .search input:focus{outline:none}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  .btn{background:#fbfaf4;border:1px solid var(--line-2);border-radius:12px;padding:11px 16px;font-weight:600}
+  .btn:hover{background:#fff}
+  .btn-solid{background:var(--green);border-color:var(--green);color:#fff}
+  .btn-solid:hover{background:var(--green-2)}
+  .btn-danger{color:var(--red);border-color:var(--red-br);background:#fff}
+  .btn-danger:hover{background:#fdf4f2}
+
+  .aisle{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:16px;overflow:hidden}
+  .aisle-head{display:flex;align-items:center;gap:14px;padding:16px 18px;width:100%;background:none;border:0;text-align:left}
+  .caret{color:#4a4a42;font-size:12px;width:12px;transition:transform .15s}
+  .aisle.collapsed .caret{transform:rotate(-90deg)}
+  .badge{flex:none;width:40px;height:40px;border-radius:11px;background:var(--green);color:#fff;
+         display:grid;place-items:center;font-weight:700;font-size:16px}
+  .aisle-name{font-size:19px;font-weight:700;flex:1}
+  .pill{background:#f4f3ec;border:1px solid var(--line);color:var(--mute);border-radius:999px;
+        padding:6px 14px;font-size:14px;white-space:nowrap}
+  .pill.hot{background:var(--gold-bg);border-color:var(--gold-br);color:var(--gold-txt);font-weight:700}
+  .aisle.collapsed .aisle-body{display:none}
+
+  .subhead{display:flex;align-items:center;gap:12px;padding:11px 18px;background:#f6f8f6;
+           border-top:1px solid var(--line);font-size:14px;font-weight:700;color:var(--green-txt)}
+  .subhead .ln{flex:1;height:1px;background:#dde5df}
+  .subhead .r{flex:none;color:#8e9a92;font-weight:600;font-size:13px}
+  .subhead .add{flex:none;background:#fff;border:1px solid #cfdcd4;border-radius:9px;
+                padding:5px 11px;font-size:13px;font-weight:700;color:var(--green-txt)}
+  .subhead .add:hover{background:#eef5f0}
+
+  .results{}
+  .crumb{font-size:12px;font-weight:700;color:var(--mute);margin-bottom:3px}
+  .subhead.sticky{position:sticky;top:56px;z-index:20}
+  .more{display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid var(--line);
+        background:#fbfaf4;font-size:15px;color:var(--mute)}
+  .more .btn{margin-left:auto}
+  .row{display:flex;align-items:center;gap:14px;padding:12px 18px;border-top:1px solid var(--line)}
+  .row.on{background:#f7fbf8}
+  .row.bought{background:#f6f5ef}
+  .row.bought .row-name{text-decoration:line-through;color:var(--mute)}
+  .tick{flex:none;width:30px;height:30px;border-radius:9px;border:1.5px solid #cfd4ce;background:#fff;
+        display:grid;place-items:center;padding:0;color:transparent;font-size:16px}
+  .row.on .tick{border-color:var(--green);background:var(--green);color:#fff}
+  .row-main{flex:1;min-width:0}
+  .row-name{font-size:18px;font-weight:700;margin-bottom:7px;line-height:1.25}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{border:1px solid var(--line-2);background:#fff;border-radius:10px;padding:6px 11px;font-size:14px;font-weight:600}
+  .chip.qty{background:var(--chip-bg);border-color:#d5e3d9;color:var(--green-txt)}
+  .store{display:flex;align-items:center;gap:6px;border:1px solid var(--line-2);background:#fff;
+         border-radius:10px;padding:5px 10px;font-size:14px;font-weight:700;color:var(--green-txt)}
+  .store:hover{background:#f2f7f3;border-color:#a9c9b6}
+  .store.empty{border-style:dashed;color:#9a9a91;font-weight:600}
+  .store .code{background:var(--chip-bg);border-radius:6px;padding:2px 7px}
+  .store .code .a{color:var(--gold-txt);margin-left:5px}
+  .store .lab{font-size:12px;font-weight:700;color:#9a9a91;letter-spacing:.04em;margin-right:2px}
+  .stepper{display:flex;align-items:center;border:1px solid var(--line-2);border-radius:10px;overflow:hidden;background:#fff}
+  .stepper .lab{padding:6px 10px;font-size:12px;font-weight:700;color:#9a9a91;letter-spacing:.04em}
+  .stepper button{background:none;border:0;border-left:1px solid var(--line-2);padding:6px 12px;
+                  color:var(--green-txt);font-weight:700;font-size:17px;line-height:1.1}
+  .stepper .val{border-left:1px solid var(--line-2);padding:6px 13px;font-weight:700;min-width:38px;text-align:center}
+  .stepper button:hover{background:#f2f7f3}
+  .row-acts{display:flex;gap:10px;flex:none}
+  .sq{width:46px;height:46px;border-radius:11px;background:#fff;border:1px solid var(--line-2);
+      display:grid;place-items:center;font-size:18px}
+  .sq.ok:hover{background:#f2f7f3;border-color:#a9c9b6}
+  .sq.no{color:var(--red);border-color:var(--red-br)}
+  .sq.no:hover{background:#fdf4f2}
+  .aisle-foot{display:flex;flex-wrap:wrap;gap:12px;padding:16px 18px;border-top:1px solid var(--line)}
+  .empty{padding:18px;color:var(--mute);border-top:1px solid var(--line)}
+
+  .bar{position:fixed;left:0;right:0;bottom:0;z-index:45;background:rgba(246,245,238,.96);
+       border-top:1px solid var(--line);backdrop-filter:blur(6px);display:flex;align-items:center;
+       justify-content:space-between;gap:14px;padding:12px 18px}
+  .bar .status{font-size:15px;color:#5c5c54}
+  .bar .status b{color:var(--gold-txt)}
+  .bar .save{background:var(--gold);border:0;color:#fff;font-weight:700;font-size:17px;padding:15px 26px;border-radius:12px}
+  .bar .save:disabled{background:#d6d3c6;color:#8d8a80;cursor:default}
+
+  .scrim{position:fixed;inset:0;z-index:60;background:rgba(20,30,25,.45);display:grid;place-items:center;padding:18px}
+  .modal{width:100%;max-width:560px;max-height:90vh;overflow:auto;background:#fff;border-radius:16px;
+         box-shadow:0 24px 60px rgba(0,0,0,.28)}
+  .modal h2{margin:0;background:var(--green);color:#fff;padding:20px 24px;font-size:21px;position:sticky;top:0}
+  .modal .body{padding:22px 24px 8px}
+  .modal label{display:block;font-weight:700;margin-bottom:8px}
+  .modal label span{color:var(--mute);font-weight:500}
+  .modal input{width:100%;padding:14px 16px;margin-bottom:20px;font-size:17px;
+               border:1px solid var(--line-2);border-radius:12px;background:#fbfaf4}
+  .modal input:focus{outline:none;border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(20,60,43,.09)}
+  .modal .acts{display:flex;gap:14px;padding:6px 24px 24px}
+  .modal .acts .btn{flex:1;padding:15px;text-align:center;border-radius:12px;font-size:17px}
+  .modal .acts .go{background:var(--green);border-color:var(--green);color:#fff}
+  .shead{display:grid;grid-template-columns:112px 1fr 48px;gap:10px;font-size:13px;color:var(--mute);font-weight:700;margin-bottom:8px}
+  .srow{display:grid;grid-template-columns:112px 1fr 48px;gap:10px;margin-bottom:12px}
+  .srow input{margin-bottom:0}
+  .srow .x{border:1px solid var(--red-br);color:var(--red);background:#fff;border-radius:12px}
+  .srow .x:hover{background:#fdf4f2}
+  .addstore{width:100%;border:1px dashed var(--line-2);background:#fbfaf4;border-radius:12px;
+            padding:13px;font-weight:700;color:var(--green-txt);margin:4px 0 14px}
+  .hint{color:var(--mute);font-size:14px;margin:0 0 16px}
+
+  .banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#fff;
+           border:1px solid var(--line);border-left:4px solid var(--gold);
+           border-radius:var(--radius);padding:13px 18px;margin-bottom:14px;font-size:15px}
+  .banner .who{font-weight:700}
+  .banner .lnk{background:none;border:0;padding:0;color:var(--green-txt);font-weight:700;text-decoration:underline}
+  .banner .sync{margin-left:auto;color:var(--mute);font-size:14px}
+  .by{background:#f4f3ec;border:1px solid var(--line);color:var(--mute);
+      border-radius:8px;padding:3px 8px;font-size:12px;font-weight:600;margin-left:8px;
+      vertical-align:middle;white-space:nowrap}
+  .btn-gold{background:var(--gold);border-color:var(--gold);color:#fff}
+  .btn-gold:hover{background:#b07d22}
+  #toasts{position:fixed;right:14px;bottom:86px;z-index:70;display:flex;flex-direction:column;gap:10px;
+          max-width:min(340px,calc(100vw - 28px))}
+  .toast{background:var(--green);color:#fff;border-radius:12px;padding:12px 14px;font-size:15px;
+         display:flex;gap:10px;align-items:flex-start;box-shadow:0 8px 24px rgba(0,0,0,.22)}
+  .toast.del{background:#8f3a2b}
+  .toast .x{background:none;border:0;color:#cfe0d6;font-size:16px;line-height:1;padding:0 0 0 4px}
+  .toast b{font-weight:700}
+  .act{background:#fff;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px}
+  .act summary{padding:13px 18px;font-weight:600;cursor:pointer}
+  .act ul{margin:0;padding:0 18px 14px;list-style:none;border-top:1px solid var(--line);padding-top:12px}
+  .act li{font-size:15px;color:#3d3d36;margin-bottom:7px;display:flex;gap:8px}
+  .act li .w{color:var(--mute);font-size:13px;margin-left:auto;white-space:nowrap}
+  .act .dot{color:var(--green-txt);font-weight:700}
+  .act .dot.d{color:var(--red)}
+  .note{color:var(--mute);padding:28px 4px;text-align:center}
+  .hist{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px}
+  .hist-head{display:flex;align-items:center;gap:14px;padding:16px 18px;width:100%;background:none;border:0;text-align:left}
+  .hist-head .t{flex:1;font-weight:700;font-size:18px}
+  .hist ul{margin:0;padding:14px 18px 16px 46px;border-top:1px solid var(--line)}
+  .hist li{margin:0 0 7px;color:#3d3d36}
+  .legend{background:#fbfaf4;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:16px}
+  .legend summary{padding:13px 18px;font-weight:600;cursor:pointer}
+  .legend .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 18px;
+                padding:4px 18px 18px;font-size:15px;color:#4a4a42}
+  .legend code{background:var(--chip-bg);color:var(--green-txt);border-radius:6px;padding:2px 7px;font-weight:700;margin-right:8px}
+  .reflist{border-top:1px solid var(--line)}
+  .refrow{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid #efeee6}
+  .refrow .cat{flex:1;background:none;border:0;padding:0;text-align:left;font-weight:700;font-size:16px;color:var(--green)}
+  .refrow .cat:hover{text-decoration:underline}
+  .refrow .c{font-size:13px;font-weight:600;color:var(--mute)}
+  .refrow .exp{flex:none;width:34px;height:34px;border:1px solid var(--line-2);background:#fff;
+               border-radius:9px;font-size:12px;color:#4a4a42}
+  .refrow .exp:hover{background:#f2f7f3}
+  .refrow .del{color:var(--red);border-color:var(--red-br)}
+  .refrow .del:hover{background:#fdf4f2}
+  .refrow.act{background:var(--chip-bg)}
+  .refsubs{display:flex;flex-wrap:wrap;gap:6px;padding:10px 18px 12px 18px;background:#fafaf5;
+           border-bottom:1px solid #efeee6}
+  .refsubs .sub{background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:6px 10px;
+                font-size:14px;font-weight:600;color:#4a4a42}
+  .refsubs .sub:hover{background:var(--chip-bg);border-color:#a9c9b6;color:var(--green-txt)}
+  .refsubs .sub.act{background:var(--green);border-color:var(--green);color:#fff}
+  .focusbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--gold-bg);
+            border:1px solid var(--gold-br);border-radius:var(--radius);padding:12px 18px;margin-bottom:14px}
+  .focusbar .t{font-weight:700;color:var(--gold-txt)}
+  .focusbar .btn{padding:8px 14px}
+  .focusbar .btn:first-of-type{margin-left:auto}
+
+  .toolbar .rhs{margin-left:auto}
+  .toolbar .rhs,.toolbar .rhs2{min-width:186px;text-align:center;padding:11px 16px}
+  .toolbar .btn-solid{background:#143c2b;border-color:#143c2b;color:#fff}
+  .toolbar .btn-solid:hover{background:#1c5138}
+  .toolbar .btn-black{background:#141414;border-color:#141414;color:#fff}
+  .toolbar .btn-black:hover{background:#2b2b2b}
+  .toolbar .btn-black.on{background:#c0503c;border-color:#c0503c;color:#fff}
+  .toolbar .btn-black.on:hover{background:#a8422f}
+  .toolbar .btn-solid.act{background:#c0503c;border-color:#c0503c;color:#fff}
+  .toolbar .btn-solid.act:hover{background:#a8422f}
+  .viewtabs{display:flex;gap:10px;margin-bottom:14px}
+  .viewtabs .btn{flex:1;text-align:center}
+  .viewtabs .btn.on{background:var(--green);border-color:var(--green);color:#fff}
+  @media (max-width:640px){
+    .toolbar .rhs{margin-left:0}
+    .toolbar .rhs,.toolbar .rhs2{flex:1 1 46%;min-width:0}
+  }
+  @media (max-width:640px){
+    .row{flex-wrap:wrap}
+    .row-acts{margin-left:44px}
+    .row-name{font-size:17px}
+    .wrap{padding:12px 10px 16px}
+    .aisle-head,.row,.subhead{padding-left:14px;padding-right:14px}
+    .subhead{flex-wrap:wrap}
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<nav class="tabs" id="tabs"></nav>
+<main class="wrap" id="view"></main>
+<div class="bar" id="bar" hidden></div>
+<div id="modalHost"></div>
+<div id="toasts"></div>
+<datalist id="storecodes"></datalist>
+
+<script>
+const DATA = {"stores":[{"code":"AB","name":"Auto Barn"},{"code":"AL","name":"Aldi"},{"code":"AL1","name":"Tweed Heads","sub":true},{"code":"AL2","name":"Tweed Heads South","sub":true},{"code":"BG","name":"Butcher Gold Coast"},{"code":"BN","name":"Butcher North Coast"},{"code":"BO","name":"Butcher Online"},{"code":"BU","name":"Bunnings"},{"code":"CM","name":"Coolangatta Markets"},{"code":"CO","name":"Coles"},{"code":"CO1","name":"Tweed Heads","sub":true},{"code":"CO2","name":"Tweed Heads South","sub":true},{"code":"CO3","name":"Banora","sub":true},{"code":"CS","name":"Cheap Shop"},{"code":"CW","name":"Chemist W’house"},{"code":"DD","name":"Double D Online"},{"code":"DM","name":"Dan Murphy"},{"code":"FS","name":"Fruit Shop"},{"code":"HP","name":"Health Products Online"},{"code":"K4","name":"Kings 4x4"},{"code":"KC","name":"Kirra Cafe"},{"code":"SB","name":"Smoked BBQ Co"},{"code":"SE","name":"Salt Of The Earth"},{"code":"WL","name":"Whole Life Health"},{"code":"WW","name":"Woolworths"},{"code":"WW1","name":"Tweed Heads","sub":true},{"code":"WW2","name":"Tweed Heads South","sub":true},{"code":"WW3","name":"Banora","sub":true}],"aisles":[{"id":"a23","name":"Alcohol","products":[{"id":"p435","name":"Better Beer — 0C/0S","info":"DM","sub":"Beer"},{"id":"p438","name":"Coopers Dry — Low Carb","info":"DM","qty":"x 6 pack","sub":"Beer"},{"id":"p437","name":"Ciroc Vodka — 1lt","info":"DM","sub":"Spirits"},{"id":"p436","name":"Ciroc Vodka — 700m","info":"DM","sub":"Spirits"},{"id":"p439","name":"Wine White — Bone","info":"DM","qty":"x 2","sub":"Wine"}]},{"id":"a21","name":"Bathroom Products","products":[{"id":"p427","name":"Eco Floss Picks","sub":"Dental"},{"id":"p426","name":"Toothpaste","sub":"Dental"},{"id":"p424","name":"Toilet Paper (4 Ply)","info":"CO/WW/AL","sub":"Paper"},{"id":"p425","name":"Deodorant Rexona","info":"CO","sub":"Personal Care"},{"id":"p420","name":"Handwashing Lotion — Foaming","info":"CO/WW","sub":"Personal Care"},{"id":"p421","name":"Razors — Disposable","info":"AL","sub":"Shaving"},{"id":"p422","name":"Razors — Packet","info":"AL","sub":"Shaving"},{"id":"p423","name":"Shaving Cream — Sensitive Skin","info":"AL","sub":"Shaving"}]},{"id":"a5","name":"Beverages","products":[{"id":"p186","name":"Coffee Bag — Organic","info":"IS","sub":"Coffee"},{"id":"p187","name":"Coffee Pods — 11","info":"AL","sub":"Coffee"},{"id":"p188","name":"Coffee Pods — 12","info":"AL","sub":"Coffee"},{"id":"p189","name":"Hazelnut Latte","info":"AL/CO","sub":"Coffee"},{"id":"p185","name":"Kirra-Coffee-beans","sub":"Coffee"},{"id":"p196","name":"SD-Ginger Beer With lime","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p195","name":"SD-SF — Blood Orange","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p191","name":"SD-SF — Lemon","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p194","name":"SD-SF — Passionfruit","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p192","name":"SD-SF — Pineapple","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p197","name":"SD-SF — Tonic Water","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p193","name":"SD-SF — Watermelon","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p190","name":"Soda Stream Gas Refill","info":"CO/WW","sub":"Soft Drink & Soda Stream"},{"id":"p184","name":"Chai Spice","info":"CO/WW","sub":"Tea"},{"id":"p199","name":"Tea — Bengal Spice","info":"CO/WW","sub":"Tea"},{"id":"p200","name":"Tea — Black","info":"CO/WW","sub":"Tea"},{"id":"p201","name":"Tea — Bush Dreaming","sub":"Tea"},{"id":"p202","name":"Tea — Earl Grey","info":"CO/WW","sub":"Tea"},{"id":"p203","name":"Tea — Green Tea & Lemon","info":"CO/WW","sub":"Tea"},{"id":"p204","name":"Tea — Peppermint","info":"CO/WW","sub":"Tea"},{"id":"p198","name":"Schweppes natural mineral water","info":"CO/WW/AL","sub":"Water"}]},{"id":"a3","name":"Butcher","products":[{"id":"p134","name":"Beef Chuck Roast","info":"BN/BG","sub":"Beef"},{"id":"p135","name":"Beef Chuck Steak Pieces","info":"BN/BG","sub":"Beef"},{"id":"p137","name":"Beef Mince","info":"AL","sub":"Beef"},{"id":"p139","name":"Beef Stewing Pieces 1kg","info":"BN/BG","sub":"Beef"},{"id":"p140","name":"Beef Tallow Grass","info":"BN","sub":"Beef"},{"id":"p147","name":"Corn Silverside","sub":"Beef"},{"id":"p148","name":"Cow’s Liver","sub":"Beef"},{"id":"p154","name":"Osso Buco","info":"BG","sub":"Beef"},{"id":"p141","name":"Chicken Breast","info":"AL","sub":"Chicken"},{"id":"p143","name":"Chicken Schnitzel","sub":"Chicken"},{"id":"p144","name":"Chicken Thighs","info":"AL","sub":"Chicken"},{"id":"p146","name":"Chicken Whole Split","info":"AL","sub":"Chicken"},{"id":"p145","name":"Chicken Wings","info":"AL","sub":"Chicken"},{"id":"p151","name":"Lamb Chops","sub":"Lamb"},{"id":"p152","name":"Lamb [Leg] Shoulder Boneless","info":"AL","sub":"Lamb"},{"id":"p149","name":"Lamb Mince","info":"CO/WW","sub":"Lamb"},{"id":"p153","name":"Lamb Ribs","sub":"Lamb"},{"id":"p136","name":"Beef Liver — Pet","info":"GB","sub":"Pet"},{"id":"p138","name":"Beef Mince — Pet","info":"WW/CO","sub":"Pet"},{"id":"p142","name":"Chicken Hearts — Pet","sub":"Pet"},{"id":"p150","name":"Lamb Mince — Pet","info":"WW/CC","sub":"Pet"},{"id":"p156","name":"Sausages — Pet","sub":"Pet"},{"id":"p133","name":"Bacon","info":"AL","sub":"Pork & Smallgoods"},{"id":"p161","name":"Ham","info":"AL","sub":"Pork & Smallgoods"},{"id":"p162","name":"Pepperoni","sub":"Pork & Smallgoods"},{"id":"p159","name":"Pork Loin roll","info":"AL","sub":"Pork & Smallgoods"},{"id":"p158","name":"Pork Mince","info":"CO/WW/AL","sub":"Pork & Smallgoods"},{"id":"p160","name":"Prosciutto","info":"AL","sub":"Pork & Smallgoods"},{"id":"p157","name":"Sausage — Thin","info":"BN/BG","sub":"Sausages"},{"id":"p155","name":"Sausages — Fat","info":"BN/BG","sub":"Sausages"}]},{"id":"a9","name":"Condiment Flavours","products":[{"id":"p237","name":"Char Siu Sauce","info":"CO/WW","sub":"Asian Sauces"},{"id":"p242","name":"Chinese Cooking Wine","info":"CO/WW","sub":"Asian Sauces"},{"id":"p249","name":"Fish Sauce","info":"CO/WW","sub":"Asian Sauces"},{"id":"p254","name":"Hoisin Sauce","info":"CO/WW","sub":"Asian Sauces"},{"id":"p259","name":"Mirin Seasoning","info":"CO/WW","sub":"Asian Sauces"},{"id":"p261","name":"Oyster Sauce","info":"CO/WW/AL","sub":"Asian Sauces"},{"id":"p271","name":"Tamarind Puree","info":"CO/WW/AL","sub":"Asian Sauces"},{"id":"p231","name":"Baby Capers","info":"CO/WW","sub":"Other"},{"id":"p275","name":"Pampas Puff Pastry","sub":"Other"},{"id":"p232","name":"Basil Paste — Gourmet","info":"CO/WW","sub":"Pastes"},{"id":"p238","name":"Chilli Paste — Gourmet G","info":"CO/WW","sub":"Pastes"},{"id":"p247","name":"Curry Paste Green — Valcom","info":"CO/WW","sub":"Pastes"},{"id":"p248","name":"Curry Paste Red — Valcom","info":"CO/WW","sub":"Pastes"},{"id":"p250","name":"Garlic Mince","info":"CO/WW","sub":"Pastes"},{"id":"p252","name":"Ginger — Organic Crushed","info":"CO/WW","sub":"Pastes"},{"id":"p251","name":"Ginger Paste — Gourmet G","info":"CO/WW","sub":"Pastes"},{"id":"p257","name":"Gourmet Garden Ginger","sub":"Pastes"},{"id":"p256","name":"Lemon Grass — Gourmet G","info":"CO/WW/AL","sub":"Pastes"},{"id":"p234","name":"Black pepper","info":"CO/WW/AL","sub":"Pepper"},{"id":"p236","name":"Black Peppercorns-Grinder","info":"CO/WW/AL","sub":"Pepper"},{"id":"p235","name":"Ground White Pepper","info":"CO/WW/AL","sub":"Pepper"},{"id":"p233","name":"Bay Leaves — Dried","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p239","name":"Chilli Powder — Kashmiri Mirch","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p240","name":"Chilli Powder — Madras","sub":"Spices & Herbs"},{"id":"p241","name":"Chilli Powder — Simply Org","info":"OL","sub":"Spices & Herbs"},{"id":"p243","name":"Cinnamon — Cylon Organic","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p245","name":"Cinnamon & Sugar Mix","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p244","name":"Cinnamon Sticks","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p246","name":"Coconut Amino Seasoning","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p253","name":"Herbs — De Provence","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p260","name":"Mustard Powder","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p263","name":"Paprika — Smoked","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p262","name":"Paprika — Sweet","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p264","name":"Pickling Spice","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p268","name":"Cubes Beef — Massell","info":"CO/WW","sub":"Stock & Bases"},{"id":"p269","name":"Cubes Chicken — Massell","info":"CO/WW","sub":"Stock & Bases"},{"id":"p270","name":"Cubes Vegetable — Massell","info":"CO/WW","sub":"Stock & Bases"},{"id":"p265","name":"Real Gourmet — Vegeta","info":"CO/WW","sub":"Stock & Bases"},{"id":"p274","name":"Romano-Italian Tomato Paste-Organic","sub":"Tomato"},{"id":"p273","name":"Tomato Paste — Logo’s","info":"CO/WW/AL","sub":"Tomato"},{"id":"p272","name":"Tomatoes Sun Dried","info":"CO/WW/AL","sub":"Tomato"},{"id":"p255","name":"Italian Glaze","info":"CO/WW","sub":"Vinegar & Glaze"},{"id":"p266","name":"Rice Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar & Glaze"},{"id":"p258","name":"Mint Water","info":"WW","sub":"Waters & Essences"},{"id":"p267","name":"Rose Water","info":"CO/WW/CW","sub":"Waters & Essences"}]},{"id":"a8","name":"Condiments","products":[{"id":"p223","name":"Mustard — Dijon","info":"CO/WW","sub":"Mustard"},{"id":"p224","name":"Mustard — French","info":"CO/WW","sub":"Mustard"},{"id":"p225","name":"Mustard — Hot English","info":"CO/WW","sub":"Mustard"},{"id":"p221","name":"Gravy — Gravox Supreme","info":"CO/WW","sub":"Other"},{"id":"p222","name":"Mayo Whole Egg","info":"CO","sub":"Other"},{"id":"p230","name":"Smoked Garlic Chilli Sauce — Old Bones Chill Co","sub":"Other"},{"id":"p229","name":"Tahini Sauce","info":"CO/WW","sub":"Other"},{"id":"p226","name":"Soy — Super Light","info":"CO/WW","sub":"Soy"},{"id":"p227","name":"Soy — Superior Dark","info":"CO/WW","sub":"Soy"},{"id":"p228","name":"Soy — Tamari","info":"CO/WW","sub":"Soy"}]},{"id":"a4","name":"Dairy","products":[{"id":"p163","name":"Butter — Kerry Gold","info":"WW","sub":"Butter"},{"id":"p164","name":"Butter — WestGold Grass Fed — Salted","info":"CO/WW","sub":"Butter"},{"id":"p166","name":"Cheese — Brie — Triple Cream","info":"AL","sub":"Cheese"},{"id":"p168","name":"Cheese — Cottage","info":"CO/WW/AL","sub":"Cheese"},{"id":"p169","name":"Cheese — Cracker Barrel","info":"CO/WW","sub":"Cheese"},{"id":"p167","name":"Cheese — Cream Cheese","info":"AL/CO/WW","sub":"Cheese"},{"id":"p171","name":"Cheese — Extra Tasty Cheddar — Marsh","info":"WW","sub":"Cheese"},{"id":"p170","name":"Cheese — Feta Dodin Ii- Block","info":"CO/WW","sub":"Cheese"},{"id":"p172","name":"Cheese — Hallomi — Block","info":"CO/WW/AL","sub":"Cheese"},{"id":"p173","name":"Cheese — Maasdam — Sheets","info":"AL","sub":"Cheese"},{"id":"p174","name":"Cheese — Mozzarella — Grated","info":"AL","sub":"Cheese"},{"id":"p175","name":"Cheese — Parmesan — Grated","info":"AL","sub":"Cheese"},{"id":"p176","name":"Cheese — Smooth Blue","info":"AL","sub":"Cheese"},{"id":"p177","name":"Cheese — Tasty — Grated","sub":"Cheese"},{"id":"p165","name":"Mersey Valley-Pickled Onion","sub":"Cheese"},{"id":"p178","name":"Cream — Sour","info":"CO/WW/AL","sub":"Cream"},{"id":"p179","name":"Cream — Thickened","info":"CO/WW/AL","sub":"Cream"},{"id":"p180","name":"Ice Cream — No Added Sugar — Chocolate","info":"AL","sub":"Ice Cream"},{"id":"p181","name":"Ice Cream — No Added Sugar — Vanilla","info":"AL","sub":"Ice Cream"},{"id":"p183","name":"Yogurt — Coconut 500g","info":"CO/WW/AL","sub":"Yoghurt"},{"id":"p182","name":"Yogurt — Greek","sub":"Yoghurt"}]},{"id":"a2","name":"Food Groceries","products":[{"id":"p52","name":"Cacao Raw Nibs — Organic","info":"TH","sub":"Baking"},{"id":"p67","name":"Cream of Tartar","info":"CO/WW","sub":"Baking"},{"id":"p129","name":"Noshu Sugar Free Choc Baking Chips","sub":"Baking"},{"id":"p128","name":"Noshu Sugar Free White Choc Baking Chips","sub":"Baking"},{"id":"p122","name":"Vanilla Bean","info":"CO/WW","sub":"Baking"},{"id":"p46","name":"Bone Broth Body Glue Natural — Jars","info":"WL","sub":"Bone Broth"},{"id":"p48","name":"Bone Broth Body Glue Natural — Squeeze Tub","info":"WL","sub":"Bone Broth"},{"id":"p49","name":"Bone Broth Body Glue Squeeze Tub","info":"WL","sub":"Bone Broth"},{"id":"p50","name":"Bone Broth Chocolate — Jars","info":"WL","sub":"Bone Broth"},{"id":"p51","name":"Bone Broth Sauce — Jars","info":"WL","sub":"Bone Broth"},{"id":"p53","name":"Coconut Cream — Small Pack","info":"CO","sub":"Coconut"},{"id":"p54","name":"Coconut Desiccated","info":"CO/WW","sub":"Coconut"},{"id":"p55","name":"Coconut Flakes — Organic","info":"CO/WW","sub":"Coconut"},{"id":"p56","name":"Coconut Flour","info":"CO/WW","sub":"Coconut"},{"id":"p57","name":"Coconut Milk — Can","info":"CO/WW","sub":"Coconut"},{"id":"p58","name":"Coconut Shredded","info":"CO/WW","sub":"Coconut"},{"id":"p125","name":"Pure Coconut Cream","info":"CO/WW","sub":"Coconut"},{"id":"p61","name":"Crackers — Olina’s Seed Crackers","info":"CO/WW","sub":"Crackers & Wraps"},{"id":"p62","name":"Crackers — Peckish — BBQ","info":"CO","sub":"Crackers & Wraps"},{"id":"p63","name":"Crackers — Peckish — Cheddar Cheese","info":"CO","sub":"Crackers & Wraps"},{"id":"p64","name":"Crackers — Peckish — Original","info":"CO","sub":"Crackers & Wraps"},{"id":"p65","name":"Crackers — Peckish — Seaweed","info":"CO","sub":"Crackers & Wraps"},{"id":"p66","name":"Crackers — Peckish — Sour Cream and Chives","info":"CO","sub":"Crackers & Wraps"},{"id":"p130","name":"Noshu Low Carb Bars Cherry","info":"WW","sub":"Crackers & Wraps"},{"id":"p124","name":"Wraps — Lower Carb","info":"AL","sub":"Crackers & Wraps"},{"id":"p68","name":"Cucumber — Dill Pickles","info":"CO/WW","sub":"Dips & Pickles"},{"id":"p70","name":"Dip — Crispy Bacon & Onion","info":"CO/WW","sub":"Dips & Pickles"},{"id":"p69","name":"Dip — Dill Pickle","info":"CO/WW","sub":"Dips & Pickles"},{"id":"p73","name":"Jalapeños Sliced","info":"CO/WW/AL","sub":"Dips & Pickles"},{"id":"p132","name":"Pickled Onion — Three&Three Old Style","sub":"Dips & Pickles"},{"id":"p126","name":"Wicked-Blissfull Beet & Apple Saverkraut","info":"CO","sub":"Dips & Pickles"},{"id":"p127","name":"Wicked-Sinfully Sublime Saverkraut","info":"CO","sub":"Dips & Pickles"},{"id":"p39","name":"Berries Fresh — Basil","sub":"Fruit"},{"id":"p38","name":"Berries Fresh — Blueberry","sub":"Fruit"},{"id":"p40","name":"Berries Fresh — Strawberry","sub":"Fruit"},{"id":"p74","name":"Mung Beans — Whole","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p75","name":"Nuts — Macadamia","info":"CO","sub":"Nuts & Seeds"},{"id":"p76","name":"Nuts — Pecan","info":"CO","sub":"Nuts & Seeds"},{"id":"p77","name":"Nuts — Pine","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p101","name":"Seeds — Cardamon Green","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p102","name":"Seeds — Chai Black","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p103","name":"Seeds — Chai White","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p104","name":"Seeds — Coriander","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p105","name":"Seeds — Hemp","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p107","name":"Seeds — Mustard","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p106","name":"Seeds — Pumpkin","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p109","name":"Seeds — Sesame Seeds — Black","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p108","name":"Seeds — Sesame Seeds — White","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p110","name":"Seeds — Sunflower Seeds","sub":"Nuts & Seeds"},{"id":"p71","name":"Deli Original Green Olives","info":"CO/WW","sub":"Olives"},{"id":"p80","name":"Olives — Black Slice","info":"CO/WW/AL","sub":"Olives"},{"id":"p79","name":"Olives — Green Pitted","info":"CO/WW","sub":"Olives"},{"id":"p81","name":"Olives — Mixed","info":"AL","sub":"Olives"},{"id":"p36","name":"Beef Tallow Grass Fed","info":"BN","sub":"Other"},{"id":"p83","name":"Pasta Fettuccine — Slendier","info":"CO/WW","sub":"Pasta"},{"id":"p82","name":"Pasta Spagetti — Slendier","info":"CO/WW","sub":"Pasta"},{"id":"p35","name":"Almond Flour","sub":"Powders & Flours"},{"id":"p47","name":"Australian-Almond Flour","sub":"Powders & Flours"},{"id":"p84","name":"Powder — Arrowroot Powder","info":"CO/WW","sub":"Powders & Flours"},{"id":"p85","name":"Powder — Baking Powder","info":"CO/WW","sub":"Powders & Flours"},{"id":"p86","name":"Powder — Buckwheat Flour — Organic","info":"CO/WW","sub":"Powders & Flours"},{"id":"p87","name":"Powder — Cacao","info":"CO/WW","sub":"Powders & Flours"},{"id":"p88","name":"Powder — Egg Whites","info":"CO/WW","sub":"Powders & Flours"},{"id":"p89","name":"Powder — Flax Seed Meal","info":"CO/WW","sub":"Powders & Flours"},{"id":"p90","name":"Powder — Gelatine","info":"CO/WW","sub":"Powders & Flours"},{"id":"p91","name":"Powder — Ginger","info":"CO/WW","sub":"Powders & Flours"},{"id":"p92","name":"Powder — Hemp","sub":"Powders & Flours"},{"id":"p93","name":"Powder — Linseed Meal","info":"CO/WW","sub":"Powders & Flours"},{"id":"p94","name":"Powder — Pea Protein","info":"CO/WW/CW","sub":"Powders & Flours"},{"id":"p95","name":"Powder — Psyllium Husk","info":"CO/WW","sub":"Powders & Flours"},{"id":"p96","name":"Powder — Tapioca","info":"WW","sub":"Powders & Flours"},{"id":"p97","name":"Powder — Whole Egg","info":"CO/WW","sub":"Powders & Flours"},{"id":"p98","name":"Powder — Xanthan Gum","info":"CO/WW/AL","sub":"Powders & Flours"},{"id":"p78","name":"Psyllium Husk","info":"CO/WW/AL","sub":"Powders & Flours"},{"id":"p34","name":"Almond Butter","info":"CO/WW","sub":"Spreads"},{"id":"p72","name":"Honey 100% Raw","info":"CO/WW","sub":"Spreads"},{"id":"p100","name":"Peanut Butter — Crunchy — Can — Tinned","info":"AL","sub":"Spreads"},{"id":"p99","name":"Peanut Butter — Organic","info":"WL","sub":"Spreads"},{"id":"p123","name":"Vegemite","info":"CO/WW/AL","sub":"Spreads"},{"id":"p33","name":"Anchovies","info":"CO/WW","sub":"Tinned Fish"},{"id":"p120","name":"Tinned — Salmon Pink","info":"CO/WW/AL","sub":"Tinned Fish"},{"id":"p121","name":"Tinned — Sardines [Pet]","info":"CO/WW/AL","sub":"Tinned Fish"},{"id":"p115","name":"Tinned Tuna — Chunks","info":"AL","sub":"Tinned Fish"},{"id":"p116","name":"Tinned Tuna — Mango Chili","info":"AL","sub":"Tinned Fish"},{"id":"p118","name":"Tinned Tuna — Seeded Mustard","info":"AL","sub":"Tinned Fish"},{"id":"p117","name":"Tinned Tuna — Sweet Chilli and Onion","info":"AL","sub":"Tinned Fish"},{"id":"p119","name":"Tinned Tuna — Tangy Jalapeños","info":"AL","sub":"Tinned Fish"},{"id":"p111","name":"Tomato — Crushed","info":"CO/WW","sub":"Tomato"},{"id":"p112","name":"Tomato — Paste","info":"CO/WW","sub":"Tomato"},{"id":"p114","name":"Tomato — Sun Dried Strips","info":"CO/WW/AL","sub":"Tomato"},{"id":"p113","name":"Tomato Paste Sachets","info":"CO/WW","sub":"Tomato"}]},{"id":"frz","name":"Frozen Food","products":[{"id":"p43","name":"Berries Frozen — Blueberry","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p42","name":"Berries Frozen — Pineapple","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p44","name":"Berries Frozen — Strawberry","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p45","name":"Macro-Organic Raspberries","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p59","name":"Cauliflower Frozen","info":"CO/WW/AL","sub":"Vegetables"},{"id":"p60","name":"Cauliflower Rice","info":"CO/WW/AL","sub":"Vegetables"},{"id":"p131","name":"Frozen Spinach","sub":"Vegetables","info":"CO/WW/AL"},{"id":"p319","name":"Spinach — Raw Frozen","sub":"Vegetables","info":"CO/WW/AL"}]},{"id":"a1","name":"Fruit & Veg","products":[{"id":"p23","name":"Eggs","info":"FS","sub":"Eggs"},{"id":"p1","name":"Avocado","info":"FS","sub":"Fruit"},{"id":"p11","name":"Lemons","info":"FS","sub":"Fruit"},{"id":"p12","name":"Limes","info":"FS","sub":"Fruit"},{"id":"p28","name":"Chill","info":"FS/CO","sub":"Herbs & Chilli"},{"id":"p24","name":"Fresh Garlic","sub":"Herbs & Chilli"},{"id":"p27","name":"Jalapeño","sub":"Herbs & Chilli"},{"id":"p32","name":"Lime Leaves","sub":"Herbs & Chilli"},{"id":"p25","name":"Coleslaw","info":"CO","sub":"Salad"},{"id":"p8","name":"Cos Lettuce","sub":"Salad"},{"id":"p9","name":"Cucumber’s","info":"FS","sub":"Salad"},{"id":"p19","name":"Rocket Lettuce","info":"FS","sub":"Salad"},{"id":"p21","name":"Tomato’s","info":"FS","sub":"Salad"},{"id":"p31","name":"Beans","info":"FS/CO/AL","sub":"Vegetables"},{"id":"p3","name":"Broccoli","sub":"Vegetables"},{"id":"p2","name":"Broccolini","info":"FS/AL","sub":"Vegetables"},{"id":"p4","name":"Capsicum Green","info":"FS","sub":"Vegetables"},{"id":"p5","name":"Capsicums Red","info":"FS","sub":"Vegetables"},{"id":"p6","name":"Carrots","info":"FS","sub":"Vegetables"},{"id":"p7","name":"Cauliflower","info":"FS","sub":"Vegetables"},{"id":"p10","name":"Celery","sub":"Vegetables"},{"id":"p14","name":"Mushrooms — Sliced","info":"FS/AL","sub":"Vegetables"},{"id":"p15","name":"Mushrooms — Whole x large","info":"FS/AL","sub":"Vegetables"},{"id":"p17","name":"Onions — Brown","info":"FS","sub":"Vegetables"},{"id":"p16","name":"Onions — Red","info":"FS","sub":"Vegetables"},{"id":"p18","name":"Potato","info":"FS","sub":"Vegetables"},{"id":"p26","name":"Pumpkin 1/4","info":"FS","sub":"Vegetables"},{"id":"p30","name":"Spring onions","sub":"Vegetables"},{"id":"p20","name":"Sweat Potato","info":"FS","sub":"Vegetables"},{"id":"p22","name":"Zucchini","info":"FS","sub":"Vegetables"}]},{"id":"a16","name":"Health","products":[{"id":"p374","name":"Rose-Hip Vital Canine 500g","sub":"Pet"},{"id":"p373","name":"Creatine Powder — Vital Strength-100% Pure","sub":"Supplements"},{"id":"p375","name":"Schuessler-Tissue Salts","sub":"Supplements"}]},{"id":"a10","name":"Herbs & Spices","products":[{"id":"p316","name":"Baking Powder","sub":"Baking & Sweeteners"},{"id":"p315","name":"Coco Earth Almond Flour","sub":"Baking & Sweeteners"},{"id":"p317","name":"Monkfruit Erythritol White","sub":"Baking & Sweeteners"},{"id":"p318","name":"Monkfruit Eythritol Raw","sub":"Baking & Sweeteners"},{"id":"p277","name":"Bouquet Garni","info":"CO/WW","sub":"Blends"},{"id":"p279","name":"Cajun Spice Blend","info":"CO/WW/AL","sub":"Blends"},{"id":"p285","name":"Chinese Five Spice","info":"CO/WW","sub":"Blends"},{"id":"p289","name":"Curry — Mild Spicy","info":"CO/WW","sub":"Blends"},{"id":"p293","name":"Garam Masala","info":"CO/WW/AL","sub":"Blends"},{"id":"p295","name":"Italian Herbs","info":"CO/WW/AL","sub":"Blends"},{"id":"p296","name":"Keens Curry","info":"CO/WW","sub":"Blends"},{"id":"p297","name":"Mixed Herbs","info":"CO/WW/AL","sub":"Blends"},{"id":"p299","name":"Nashville Style Spice","info":"CO/WW","sub":"Blends"},{"id":"p305","name":"Pickling Powder","info":"CO/WW","sub":"Blends"},{"id":"p307","name":"Ras El Hanout","info":"CO/WW","sub":"Blends"},{"id":"p309","name":"Shichimi Togarashi","info":"CO/WW/AL","sub":"Blends"},{"id":"p314","name":"Za’atar Mix","info":"CO/WW","sub":"Blends"},{"id":"p304","name":"Oregano","info":"CO/WW/AL","sub":"Herbs"},{"id":"p308","name":"Sage Dried","info":"CO/WW","sub":"Herbs"},{"id":"p312","name":"Thyme Leaves","info":"CO/WW","sub":"Herbs"},{"id":"p278","name":"Candle Nuts","info":"CO/WW","sub":"Other"},{"id":"p280","name":"Cardamom Pods","info":"CO/WW","sub":"Seeds"},{"id":"p287","name":"Coriander Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p292","name":"Fennel Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p291","name":"Fenugreek Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p298","name":"Mustard Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p300","name":"Niggela Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p306","name":"Poppy Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p276","name":"All Spices","sub":"Spices"},{"id":"p281","name":"Cardamom Powder","info":"CO/WW/AL","sub":"Spices"},{"id":"p282","name":"Cayenne Pepper","info":"CO/WW","sub":"Spices"},{"id":"p284","name":"Chilli — Whole","info":"CO/WW","sub":"Spices"},{"id":"p283","name":"Chilli Powder","info":"CO/WW","sub":"Spices"},{"id":"p286","name":"Cloves","info":"CO/WW","sub":"Spices"},{"id":"p288","name":"Coriander Powder","info":"CO/WW","sub":"Spices"},{"id":"p290","name":"Cumin Powder","info":"CO/WW","sub":"Spices"},{"id":"p294","name":"Garlic Powder","info":"CO/WW/AL","sub":"Spices"},{"id":"p301","name":"Nutmeg Ground","info":"CO/WW","sub":"Spices"},{"id":"p302","name":"Nutmeg Whole Nuts","info":"CO/WW","sub":"Spices"},{"id":"p303","name":"Onion Powder","info":"CO/WW","sub":"Spices"},{"id":"p313","name":"Organic Tumeric","sub":"Spices"},{"id":"p310","name":"Star of Anise","info":"CO/WW/AL","sub":"Spices"},{"id":"p311","name":"Sumac — Sour Spice","info":"CO/WW/AL","sub":"Spices"}]},{"id":"a18","name":"Kitchen Cleaning","products":[{"id":"p388","name":"Bags — Garbage Bin 240 Ltr","info":"CO","sub":"Bags & Bins"},{"id":"p390","name":"Bags — Tubs","info":"CO","sub":"Bags & Bins"},{"id":"p389","name":"Garbage Kitchen","info":"AL","sub":"Bags & Bins"},{"id":"p386","name":"All Purpose Cleaner","info":"AL","sub":"Cleaners"},{"id":"p394","name":"Domestos","info":"AL","sub":"Cleaners"},{"id":"p395","name":"Easy Off Oven","info":"CO/WW/BU","sub":"Cleaners"},{"id":"p396","name":"Floor Cleaner","info":"CO/WW/AL/BU","sub":"Cleaners"},{"id":"p398","name":"Miracle Soap","info":"CO/WW","sub":"Cleaners"},{"id":"p401","name":"Toilet Cartridge — Ducks","info":"CO/WW","sub":"Cleaners"},{"id":"p404","name":"Window Cleaner","info":"AL/BU","sub":"Cleaners"},{"id":"p391","name":"Dishwashing Liquid","info":"AL","sub":"Dishwashing"},{"id":"p393","name":"Dishwashing Rinse Aid","info":"AL","sub":"Dishwashing"},{"id":"p392","name":"Dishwashing Tablets","info":"AL","sub":"Dishwashing"},{"id":"p387","name":"Clothes Washing Powder","info":"AL","sub":"Laundry"},{"id":"p402","name":"Vanish Oxi Action Granules","info":"CO/WW","sub":"Laundry"},{"id":"p397","name":"Micro Clothes","info":"AB","sub":"Pads & Cloths"},{"id":"p405","name":"Replacement Scouters-Wand","info":"CO","sub":"Pads & Cloths"},{"id":"p399","name":"Scrubbing Pads — Cause","info":"CO/WW","sub":"Pads & Cloths"},{"id":"p400","name":"Scrubbing Pads — Fine","info":"CO/WW","sub":"Pads & Cloths"},{"id":"p403","name":"Washing Pads","sub":"Pads & Cloths"}]},{"id":"a17","name":"Kitchen Food","products":[{"id":"p376","name":"Baking Paper","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p377","name":"Glad Wrap","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p378","name":"Hand Towels","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p379","name":"Napkins","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p380","name":"Tissues","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p381","name":"Snap Seal — 15 x 9","info":"CO","sub":"Storage Bags"},{"id":"p382","name":"Snap Seal — 18 x17","info":"CO","sub":"Storage Bags"},{"id":"p383","name":"Snap Seal — 22 x 22.5","info":"CO","sub":"Storage Bags"},{"id":"p384","name":"Snap Seal — 22 x 25","info":"CO","sub":"Storage Bags"},{"id":"p385","name":"Snap Seal — 27 x 33","info":"CO","sub":"Storage Bags"}]},{"id":"a19","name":"Laundry Cleaning","products":[{"id":"p406","name":"All Purpose Cleaner","sub":"Cleaners"},{"id":"p407","name":"Dishwashing Liquid — Sml","info":"CO/WW","sub":"Cleaners"},{"id":"p409","name":"Gumption","info":"CO/WW/BU","sub":"Cleaners"},{"id":"p414","name":"Toilet Cartridge — Ducks","info":"CO/WW","sub":"Cleaners"},{"id":"p410","name":"Handwashing Lotion — Foaming","info":"CO/WW/CW","sub":"Handwashing"},{"id":"p412","name":"Sards Soap","info":"CO/WW/CW","sub":"Laundry"},{"id":"p411","name":"Sards Stick","info":"CO/WW/BU","sub":"Laundry"},{"id":"p413","name":"Stain Remover — Exit Blocks","info":"CO/WW","sub":"Laundry"},{"id":"p415","name":"Washing Powder","info":"AL","sub":"Laundry"},{"id":"p408","name":"Fire Starters","sub":"Other"}]},{"id":"a22","name":"Medical Products","products":[{"id":"p433","name":"Band Aids","info":"CO","sub":"First Aid"},{"id":"p434","name":"Milton-30 Anti-Bacterial Tablets","sub":"First Aid"},{"id":"p430","name":"(FR) Paracetamol (Hedanol)","info":"AL","sub":"Medication"},{"id":"p432","name":"Sukin Natural Deodorant","sub":"Personal Care"},{"id":"p429","name":"60+ Years Probiotic — Life Space","info":"CO/WW/CW","sub":"Supplements"},{"id":"p428","name":"Hydralyte Tabs — Black Current","info":"CO/WW/CW","sub":"Supplements"},{"id":"p431","name":"Wild Fish Oil — High Strength — Swisse","info":"CO/CW","sub":"Supplements"}]},{"id":"a15","name":"Oils","products":[{"id":"p357","name":"4Ltr Virgin Olive Oil","info":"CO/WW/AL","sub":"Cooking Oils"},{"id":"p358","name":"Avocado Oil","info":"CO/WW","sub":"Cooking Oils"},{"id":"p353","name":"Caster Oil","info":"CO/WW/CW","sub":"Cooking Oils"},{"id":"p354","name":"Coconut Oil","info":"CO/WW","sub":"Cooking Oils"},{"id":"p355","name":"Coconut Oil Spray","info":"CO/WW","sub":"Cooking Oils"},{"id":"p363","name":"Oh So Natural — Organic Extra Virgin Olive Oil","sub":"Cooking Oils"},{"id":"p356","name":"Sesame Oil — Pure","info":"CO/WW","sub":"Cooking Oils"},{"id":"p360","name":"Essential Oils — Lavender","sub":"Essential Oils"},{"id":"p361","name":"Essential Oils — Oregano","sub":"Essential Oils"},{"id":"p359","name":"Essential Oils — Peppermint","sub":"Essential Oils"},{"id":"p362","name":"Essential Oils — Wild Orange","sub":"Essential Oils"},{"id":"p372","name":"Nirvana Organics Liquid Stevia — Butterscotch","sub":"Sweeteners"},{"id":"p371","name":"Nirvana Organics Liquid Stevia — Caramel","sub":"Sweeteners"},{"id":"p364","name":"Apple Cider Vinegar — Organic","info":"CO","sub":"Vinegar"},{"id":"p367","name":"Balsamic Vinegar Of Modena","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p369","name":"Malt Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p365","name":"Red Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p368","name":"Rice Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p370","name":"White Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p366","name":"White Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar"}]},{"id":"a12","name":"Pellets","products":[{"id":"p335","name":"Fruit Wood with Charcoal.","info":"SB","sub":"Smoking Pellets"},{"id":"p336","name":"Texas Bland with Charcoal","info":"SB","sub":"Smoking Pellets"}]},{"id":"a20","name":"Pet Gear","products":[{"id":"p417","name":"Deremcare — Malaise Mala — Medicated Shampoo","sub":"Grooming"},{"id":"p419","name":"Shampoo and Conditioner Combined","sub":"Grooming"},{"id":"p416","name":"Chews","info":"AL","sub":"Treats"},{"id":"p418","name":"Poo Bags","info":"CO","sub":"Waste"}]},{"id":"a11","name":"Rubs","products":[{"id":"p320","name":"Bagel Spicy Edition","sub":"BBQ Rubs"},{"id":"p321","name":"Bourbon BBQ","sub":"BBQ Rubs"},{"id":"p322","name":"Braai Smoky BBQ","sub":"BBQ Rubs"},{"id":"p326","name":"Charcoal","sub":"BBQ Rubs"},{"id":"p325","name":"Charcoal Chicken Shop","sub":"BBQ Rubs"},{"id":"p323","name":"Dalmatian Brisket","sub":"BBQ Rubs"},{"id":"p327","name":"Gourmet BBQ","sub":"BBQ Rubs"},{"id":"p328","name":"Gunpowder Smokey","sub":"BBQ Rubs"},{"id":"p329","name":"Korean BBQ","sub":"BBQ Rubs"},{"id":"p334","name":"The White Rub","sub":"BBQ Rubs"},{"id":"p331","name":"Smoked Sea salt For Lamb","sub":"Salts"},{"id":"p330","name":"Smokey Chilli Lime Salt","sub":"Salts"},{"id":"p324","name":"Burger Sauce Seasoning","sub":"Seasonings"},{"id":"p332","name":"Souvlaki Seasoning","sub":"Seasonings"},{"id":"p333","name":"Sweet N Smokey Cajon","sub":"Seasonings"}]},{"id":"a7","name":"Sauces","products":[{"id":"p213","name":"Kikkomen-Tamari Soy Sauce","sub":"Asian"},{"id":"p217","name":"Chilli Oil","sub":"Hot & Spicy"},{"id":"p211","name":"Red Hot Wings","info":"CO/WW","sub":"Hot & Spicy"},{"id":"p216","name":"Siracha Mayo Sauce","sub":"Hot & Spicy"},{"id":"p215","name":"Sweet Chilli Sauce","sub":"Hot & Spicy"},{"id":"p212","name":"Tabasco Sauce","info":"CO/WW","sub":"Hot & Spicy"},{"id":"p210","name":"Mustard — French’s Classic Yellow Mustard","sub":"Mustard"},{"id":"p218","name":"Mingle-Sauce-BBQ","info":"WW3","sub":"Table Sauces"},{"id":"p220","name":"Mingle-Sauce-Sweet Chilli","info":"WW3","sub":"Table Sauces"},{"id":"p219","name":"Mingle-Sauce-Tomato","info":"WW3","sub":"Table Sauces"},{"id":"p214","name":"Worcestershire Sauce","info":"CO/WW","sub":"Table Sauces"}]},{"id":"a14","name":"Seasonings","products":[{"id":"p348","name":"Salt — Celtic — Fine","info":"IS","sub":"Salt & Pepper"},{"id":"p349","name":"White Ground Pepper","info":"CO/WW/AL","sub":"Salt & Pepper"},{"id":"p350","name":"Massel Stock Cubes — Beef","info":"CO/WW","sub":"Stock Cubes"},{"id":"p351","name":"Stock Cubes — Chicken","info":"CO/WW","sub":"Stock Cubes"},{"id":"p352","name":"Stock Cubes — Vegetable","info":"CO/WW","sub":"Stock Cubes"}]},{"id":"a6","name":"Snacks & Treats","products":[{"id":"p207","name":"Pork Crackles","info":"CO","sub":"Savoury"},{"id":"p209","name":"Double D — Butter Candy","sub":"Sweets & Chocolate"},{"id":"p208","name":"Double D — Fruit Jellies","sub":"Sweets & Chocolate"},{"id":"p205","name":"NS — Dark Chocolate","info":"WW","sub":"Sweets & Chocolate"},{"id":"p206","name":"NS-Fruit & Nut","info":"WW","sub":"Sweets & Chocolate"}]},{"id":"a13","name":"Sweetener Substitutes","products":[{"id":"p346","name":"Choc Baking Chips — Noshu","info":"CO/WW","sub":"Baking Chips"},{"id":"p347","name":"Choc White Baking Chips — Noshu","info":"CO/WW","sub":"Baking Chips"},{"id":"p345","name":"Monkfruit — Baking Blend","info":"CO/WW/CW","sub":"Monkfruit"},{"id":"p344","name":"Monkfruit — Icing Powder","info":"CO/WW","sub":"Monkfruit"},{"id":"p343","name":"Monkfruit — Raw","info":"CO/WW","sub":"Monkfruit"},{"id":"p342","name":"Monkfruit — White","info":"CO/WW","sub":"Monkfruit"},{"id":"p337","name":"Stevia Liquid — Butterscotch","info":"CO/WW/CW","sub":"Stevia"},{"id":"p338","name":"Stevia Liquid — Caramel","info":"CO/WW","sub":"Stevia"},{"id":"p339","name":"Stevia Liquid — Original","info":"CO/WW/CW","sub":"Stevia"},{"id":"p340","name":"Stevia Liquid — Vanilla","info":"CO/WW/CW","sub":"Stevia"},{"id":"p341","name":"Vanilla Extract — Concentrated","info":"CO/WW/AL","sub":"Vanilla"}]}]};
+
+/* ============================================================
+   SHARED SYNC CONFIG — fill in the anon (public) key below.
+   Supabase → Project Settings → API → "Project API keys" → anon public
+   ============================================================ */
+const SUPABASE_URL      = 'https://cqeppaaldatwdqxsxftc.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_YJXdWv3g-vGPxVKy9sMjrA__wfIDA3G';
+const ROW_ID            = 'shared';
+
+const SB = (window.supabase && SUPABASE_ANON_KEY.indexOf('PASTE') === -1)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { realtime:{ params:{ eventsPerSecond:5 } } })
+  : null;
+
+let ME='', REV=0, SYNC='', writeTimer=null, syncing=false;
+
+function setSync(t){ SYNC=t; const b=document.getElementById('sync'); if(b) b.textContent=t; }
+function stamp(){ return new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
+
+function fmtDate(d){
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], p=n=>String(n).padStart(2,'0');
+  return `${days[d.getDay()]} ${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+
+let S = {
+  tab:'list', refOpen:true, refCats:{}, focus:null, allItems:false, catsOpen:true, shopView:'az', limit:50, log:[], title:'Shop — '+fmtDate(new Date()), query:'', dirty:false,
+  aisles: DATA.aisles.map(a=>({
+    id:a.id, name:a.name, collapsed:false,
+    products:a.products.map(p=>({
+      id:p.id, name:p.name, sub:p.sub||'Other', qty:p.qty||'',
+      stores:(p.info||'').split('/').filter(Boolean).map(c=>({code:c, aisle:''})),
+      buy:1, onList:false, bought:false
+    }))
+  })),
+  history:[]
+};
+let seq = 1000;
+
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sortkey = s => String(s).toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+const cmp = (a,b) => sortkey(a).localeCompare(sortkey(b));
+const allProducts = () => S.aisles.flatMap(a=>a.products);
+const onListCount = () => allProducts().filter(p=>p.onList).length;
+const boughtCount = () => allProducts().filter(p=>p.onList&&p.bought).length;
+
+function sortAisle(a){ a.products.sort((x,y)=>cmp(x.sub,y.sub)||cmp(x.name,y.name)); }
+function sortAisles(){ S.aisles.sort((x,y)=>cmp(x.name,y.name)); }
+function badgeFor(n){ const m=n.match(/^Aisle\s+(\d+)/i); return m?m[1]:n.trim().charAt(0).toUpperCase(); }
+function subsOf(a){ return [...new Set(a.products.map(p=>p.sub))].sort(cmp); }
+function storeText(p){ return p.stores.map(s=>s.code+(s.aisle?' '+s.aisle:'')).join(' · '); }
+function matches(p,q){ return !q || (p.name+' '+p.sub+' '+storeText(p)).toLowerCase().includes(q); }
+function groupBySub(ps){
+  const g=[], idx={};
+  ps.forEach(p=>{ if(!(p.sub in idx)){ idx[p.sub]=g.length; g.push({sub:p.sub,items:[]}); } g[idx[p.sub]].items.push(p); });
+  g.sort((a,b)=>cmp(a.sub,b.sub));
+  g.forEach(x=>x.items.sort((a,b)=>cmp(a.name,b.name)));
+  return g;
+}
+let seenAt = 0;
+
+function logEvent(kind, name, where){
+  S.log.unshift({k:kind, n:name, w:where||'', by:ME||'Someone', t:Date.now()});
+  S.log = S.log.slice(0, 40);
+  seenAt = S.log[0].t;
+}
+
+function ago(t){
+  const m = Math.round((Date.now()-t)/60000);
+  if(m < 1) return 'just now';
+  if(m < 60) return m+' min ago';
+  const h = Math.round(m/60);
+  return h < 24 ? h+' h ago' : Math.round(h/24)+' d ago';
+}
+
+function toast(ev){
+  const box = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast'+(ev.k==='del'?' del':'');
+  el.innerHTML = `<span><b>${esc(ev.by)}</b> ${ev.k==='del'?'deleted':'added'} ${esc(ev.n)}${ev.w?' \u00b7 '+esc(ev.w):''}</span>
+    <button class="x" aria-label="Dismiss">\u2715</button>`;
+  el.querySelector('.x').onclick = ()=>el.remove();
+  box.appendChild(el);
+  setTimeout(()=>el.remove(), 9000);
+}
+
+function activityPanel(){
+  if(!S.log.length) return '';
+  return `<details class="act"><summary>Recent activity (${S.log.length})</summary><ul>${
+    S.log.slice(0,12).map(e=>`<li><span class="dot ${e.k==='del'?'d':''}">${e.k==='del'?'\u2212':'+'}</span>
+      <span><b>${esc(e.by)}</b> ${e.k==='del'?'deleted':'added'} ${esc(e.n)}${e.w?' \u00b7 '+esc(e.w):''}</span>
+      <span class="w">${ago(e.t)}</span></li>`).join('')}</ul></details>`;
+}
+
+function save(){
+  if(!SB){ setSync('Offline \u2014 not connected'); return; }
+  clearTimeout(writeTimer);
+  writeTimer = setTimeout(async ()=>{
+    REV++;
+    try{
+      const { error } = await SB.from('house_list').upsert({
+        id: ROW_ID, rev: REV, updated_by: ME || 'Someone',
+        data: { title:S.title, aisles:S.aisles, history:S.history, log:S.log }
+      });
+      if(error) throw error;
+      setSync('Saved '+stamp());
+    }catch(e){
+      setSync('Save failed \u2014 retrying');
+      setTimeout(save, 3000);
+    }
+  }, 500);
+}
+
+function applyRemote(row){
+  if(!row || (row.rev||0) <= REV) return;
+  if(document.getElementById('modalHost').innerHTML) return;
+  const d = row.data || {};
+  if(!d.aisles || !d.aisles.length) return;
+  REV = row.rev;
+  S.title = d.title || S.title; S.aisles = d.aisles; S.history = d.history || [];
+  const fresh = (d.log||[]).filter(e=>e.t>seenAt && e.by!==ME);
+  S.log = d.log || [];
+  if(S.log.length) seenAt = Math.max(seenAt, S.log[0].t);
+  normalise(); render();
+  fresh.slice(0,4).reverse().forEach(toast);
+  if(fresh.length>4) toast({by:'', k:'add', n:(fresh.length-4)+' more changes', w:''});
+  setSync('Updated by '+(row.updated_by||'someone')+' \u00b7 '+stamp());
+}
+
+async function pull(){
+  if(!SB || syncing || document.getElementById('modalHost').innerHTML) return;
+  syncing = true;
+  try{
+    const { data, error } = await SB.from('house_list')
+      .select('rev,data,updated_by').eq('id', ROW_ID).maybeSingle();
+    if(!error) applyRemote(data);
+  }catch(e){}
+  syncing = false;
+}
+
+function normalise(){
+  S.aisles.forEach(a=>{
+    a.products.forEach(p=>{
+      if(!p.sub) p.sub='Other';
+      if(!Array.isArray(p.stores))
+        p.stores=(p.info||'').split('/').filter(Boolean).map(c=>({code:c,aisle:''}));
+      delete p.info; delete p.star; delete p.stock; delete p.editStock;
+    });
+    sortAisle(a);
+  });
+  sortAisles();
+}
+
+function storeBtn(p){
+  if(!p.stores.length)
+    return `<button class="store empty" data-act="stores" data-p="${p.id}">+ Add store</button>`;
+  return `<button class="store" data-act="stores" data-p="${p.id}">${
+    p.stores.map(s=>`<span class="code">${esc(s.code)}</span>`).join('')
+  }</button>`;
+}
+
+function aisleBtn(p){
+  const set = p.stores.filter(s=>s.aisle);
+  if(!set.length)
+    return `<button class="store empty" data-act="stores" data-p="${p.id}">+ Add aisle</button>`;
+  return `<button class="store" data-act="stores" data-p="${p.id}"><span class="lab">AISLE</span>${
+    set.map(s=>`<span class="code">${esc(s.code)}<span class="a">${esc(s.aisle)}</span></span>`).join('')
+  }</button>`;
+}
+
+function productRow(p, crumb){
+  return `<div class="row ${p.onList?'on':''} ${p.bought?'bought':''}">
+    <button class="tick" data-act="toggle" data-p="${p.id}" aria-label="Add to list">\u2713</button>
+    <div class="row-main">
+      ${crumb?`<div class="crumb">${esc(crumb)}</div>`:''}
+      <div class="row-name">${esc(p.name)}${p.by&&p.by!==ME?`<span class="by">added by ${esc(p.by)}</span>`:''}</div>
+      <div class="chips">
+        ${p.qty?`<span class="chip qty">${esc(p.qty)}</span>`:''}
+        <span class="stepper"><span class="lab">BUY</span><button data-act="buy-" data-p="${p.id}">\u2212</button><span class="val">${p.buy}</span><button data-act="buy+" data-p="${p.id}">+</button></span>
+        ${storeBtn(p)}
+        ${aisleBtn(p)}
+      </div>
+    </div>
+    <div class="row-acts">
+      <button class="sq ok" data-act="bought" data-p="${p.id}" title="Mark purchased">\u2713</button>
+      <button class="sq no" data-act="del" data-p="${p.id}" title="Delete item">\u2715</button>
+    </div>
+  </div>`;
+}
+
+function subhead(a,g){
+  const n=g.items.filter(p=>p.onList).length;
+  return `<div class="subhead sticky" id="sub-${a.id}-${slug(g.sub)}">
+    <span>${esc(g.sub)}</span><span class="ln"></span>
+    <span class="r">${n?n+' of ':''}${g.items.length}</span>
+    <button class="add" data-act="additem" data-a="${a.id}" data-sub="${esc(g.sub)}">+ Add item</button>
+  </div>`;
+}
+
+function renderTabs(){
+  const t=[['list','List',onListCount()],['shop','Shop',onListCount()-boughtCount()],['history','History',S.history.length]];
+  document.getElementById('tabs').innerHTML = t.map(([k,l,n])=>
+    `<button class="tab ${S.tab===k?'on':''}" data-tab="${k}">${l}<span class="n">${n}</span></button>`).join('');
+}
+
+const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+
+function allBar(){
+  if(!S.allItems) return '';
+  const n=allProducts().length;
+  return `<div class="focusbar">
+    <span class="t">All items</span>
+    <span>${S.aisles.length} categories \u00b7 ${n} items</span>
+    <button class="btn" data-act="allitems">\u2715 Close all items</button>
+  </div>`;
+}
+
+function focusBar(){
+  if(!S.focus) return '';
+  const a=S.aisles.find(x=>x.id===S.focus.a);
+  if(!a){ S.focus=null; return ''; }
+  const n=S.focus.sub ? a.products.filter(p=>p.sub===S.focus.sub).length : a.products.length;
+  return `<div class="focusbar">
+    <span class="t">${esc(a.name)}${S.focus.sub?' · '+esc(S.focus.sub):''}</span>
+    <span>${n} item${n===1?'':'s'}</span>
+    <button class="btn" data-act="clearfocus">\u2190 All categories</button>
+  </div>`;
+}
+
+function quickRef(){
+  const shut = !S.catsOpen;
+  return `<section class="aisle">
+    <div class="aisle-head">
+      <span class="caret" style="${shut?'transform:rotate(-90deg)':''}">\u25be</span>
+      <span class="aisle-name">Categories</span>
+      <span class="pill">${S.aisles.length} categories \u00b7 ${allProducts().length} items</span>
+      <button class="exp ${shut?'':'del'}" data-act="allcats" title="${shut?'Open categories':'Close categories'}" style="margin-left:10px">${shut?'\u25b8':'\u2715'}</button>
+    </div>
+    ${shut?'':`<div class="reflist">${S.aisles.map(a=>{
+      const open = !!S.refCats[a.id];
+      return `<div class="refrow">
+          <button class="exp" data-act="refexp" data-a="${a.id}">${open?'\u25be':'\u25b8'}</button>
+          <button class="cat" data-act="jump" data-cat="${a.id}">${esc(a.name)}</button>
+          <span class="c">${a.products.length}</span>
+          <button class="exp del" data-act="delaisle" data-a="${a.id}" title="Delete category">\u2715</button>
+        </div>
+        ${open?`<div class="refsubs">${subsOf(a).map(x=>
+          `<button class="sub" data-act="jump" data-a="${a.id}" data-sub="${esc(x)}">${esc(x)}</button>`
+        ).join('')}</div>`:''}`;
+    }).join('')}</div>
+    <div class="aisle-foot">
+      <button class="btn btn-solid" data-act="addaisle">+ Add category</button>
+    </div>`}
+  </section>`;
+}
+
+function searchPanel(q){
+  const hits=[];
+  S.aisles.forEach(a=>a.products.filter(p=>matches(p,q)).forEach(p=>hits.push({a,p})));
+  hits.sort((x,y)=>cmp(x.p.name,y.p.name)||cmp(x.a.name,y.a.name));
+  if(!hits.length) return '<p class="note">Nothing matches that search.</p>';
+  const shown=hits.slice(0, S.limit);
+  return `<section class="aisle">
+    <div class="aisle-head">
+      <span class="badge">\u2315</span>
+      <span class="aisle-name">Search results</span>
+      <span class="pill hot">${hits.length} found</span>
+    </div>
+    <div class="results">${shown.map(h=>productRow(h.p, h.a.name+' \u00b7 '+h.p.sub)).join('')}</div>
+    ${hits.length>shown.length?`<div class="more">
+      <span>Showing ${shown.length} of ${hits.length}</span>
+      <button class="btn" data-act="more">Show 50 more</button>
+    </div>`:`<div class="more"><span>All ${hits.length} shown</span></div>`}
+  </section>`;
+}
+
+function renderList(){
+  const q=S.query.trim().toLowerCase();
+  const F = q ? null : S.focus;
+  const body = q ? searchPanel(q)
+    : (!F && !S.allItems ? quickRef() : S.aisles.map(a=>{
+    if(F && F.a!==a.id) return '';
+    if(!a.products.length) return `<section class="aisle"><div class="aisle-head">
+        <span class="badge">${esc(badgeFor(a.name))}</span><span class="aisle-name">${esc(a.name)}</span>
+        <span class="pill">empty</span></div>
+      <div class="aisle-foot">
+        <button class="btn" data-act="additem" data-a="${a.id}">+ Add item</button>
+        <button class="btn btn-danger" data-act="delaisle" data-a="${a.id}">Delete category</button>
+      </div></section>`;
+    let ps=a.products.filter(p=>matches(p,q));
+    if(F && F.sub) ps=ps.filter(p=>p.sub===F.sub);
+    if(!ps.length) return '';
+    if(q && !ps.length) return '';
+    const n=a.products.filter(p=>p.onList).length;
+    return `<section class="aisle ${a.collapsed&&!q?'collapsed':''}" id="cat-${a.id}">
+      <button class="aisle-head" data-act="fold" data-a="${a.id}">
+        <span class="caret">▼</span><span class="badge">${esc(badgeFor(a.name))}</span>
+        <span class="aisle-name">${esc(a.name)}</span>
+        <span class="pill ${n?'hot':''}">${n} on list</span>
+      </button>
+      <div class="aisle-body">
+        ${ps.length?groupBySub(ps).map(g=>subhead(a,g)+g.items.map(productRow).join('')).join('')
+                   :'<p class="empty">No products yet.</p>'}
+        <div class="aisle-foot">
+          <button class="btn" data-act="additem" data-a="${a.id}">+ Add item</button>
+          <button class="btn" data-act="addsub" data-a="${a.id}">+ Add sub-category</button>
+          <button class="btn btn-danger" data-act="delaisle" data-a="${a.id}">Delete category</button>
+        </div>
+      </div>
+    </section>`;
+  }).join(''));
+
+  document.getElementById('view').innerHTML = `
+    <div class="titlebar"><input id="title" value="${esc(S.title)}"></div>
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" placeholder="Search items, sub-categories or store codes…" value="${esc(S.query)}">
+    </div>
+    <div class="banner">
+      <span>Shared list — everyone invited sees the same one.</span>
+      <span class="who">You are ${esc(ME||'Guest')}</span>
+      <button class="lnk" data-act="rename">change</button>
+      <span class="sync" id="sync">${esc(SYNC)}</span>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-gold" data-act="quickadd">+ Quick add to list</button>
+      <button class="btn" data-act="clear">Clear selections</button>
+      <button class="btn btn-black rhs ${S.catsOpen&&!S.allItems&&!S.focus?'on':''}" data-act="allcats">${S.catsOpen&&!S.allItems&&!S.focus?'\u2715 Close categories':'All categories'}</button>
+      <button class="btn btn-solid rhs2 ${S.allItems?'act':''}" data-act="allitems">${S.allItems?'\u2715 Close all items':'All items'}</button>
+    </div>
+    ${q?'':activityPanel()}
+    ${q?'':allBar()}
+    ${q?'':focusBar()}
+    <details class="legend"><summary>Store codes</summary><div class="grid">${
+      DATA.stores.map(s=>`<div><code>${esc(s.code)}</code>${esc(s.name)}</div>`).join('')}</div></details>
+    ${body}`;
+}
+
+function shopRow(p, note){
+  return `<div class="row ${p.bought?'bought':''}">
+    <button class="tick" data-act="bought" data-p="${p.id}" style="${p.bought?'border-color:var(--green);background:var(--green);color:#fff':''}">\u2713</button>
+    <div class="row-main">
+      ${note?`<div class="crumb">${esc(note)}</div>`:''}
+      <div class="row-name">${esc(p.name)}${p.wantedBy&&p.wantedBy!==ME?`<span class="by">${esc(p.wantedBy)}</span>`:''}</div>
+      <div class="chips">
+        ${p.qty?`<span class="chip qty">${esc(p.qty)}</span>`:''}
+        <span class="chip qty">Buy ${p.buy}</span>
+        ${storeBtn(p)}
+        ${aisleBtn(p)}
+      </div>
+    </div>
+    <div class="row-acts"><button class="sq no" data-act="toggle" data-p="${p.id}" title="Take off list">\u2715</button></div>
+  </div>`;
+}
+
+function shopToggle(){
+  return `<div class="viewtabs">
+    <button class="btn ${S.shopView==='az'?'on':''}" data-act="shopview" data-v="az">A\u2013Z list</button>
+    <button class="btn ${S.shopView==='store'?'on':''}" data-act="shopview" data-v="store">By store</button>
+  </div>`;
+}
+
+function shopAZ(){
+  const items=[];
+  S.aisles.forEach(a=>a.products.filter(p=>p.onList).forEach(p=>items.push({a,p})));
+  items.sort((x,y)=>cmp(x.p.name,y.p.name));
+  return `<section class="aisle">
+    <div class="aisle-head">
+      <span class="aisle-name">Everything on the list</span>
+      <span class="pill hot">${items.filter(x=>x.p.bought).length}/${items.length}</span>
+    </div>
+    <div>${items.map(x=>shopRow(x.p, x.a.name+' \u00b7 '+x.p.sub)).join('')}</div>
+  </section>`;
+}
+
+function aisleKey(v){
+  const n=parseInt(v,10);
+  return isNaN(n) ? 'zzz'+sortkey(v) : String(n).padStart(4,'0');
+}
+
+function shopByStore(){
+  const names=Object.fromEntries(DATA.stores.map(s=>[s.code,s.name]));
+  const groups={}, none=[];
+  S.aisles.forEach(a=>a.products.filter(p=>p.onList).forEach(p=>{
+    if(!p.stores.length){ none.push({a,p,aisle:''}); return; }
+    p.stores.forEach(st=>{
+      (groups[st.code] = groups[st.code] || []).push({a,p,aisle:st.aisle});
+    });
+  }));
+  const codes=Object.keys(groups).sort(cmp);
+  const block=(code,list)=>{
+    list.sort((x,y)=>aisleKey(x.aisle).localeCompare(aisleKey(y.aisle))||cmp(x.p.name,y.p.name));
+    return `<section class="aisle">
+      <div class="aisle-head">
+        <span class="badge">${esc(code.slice(0,3))}</span>
+        <span class="aisle-name">${esc(names[code]||code)}</span>
+        <span class="pill hot">${list.filter(x=>x.p.bought).length}/${list.length}</span>
+      </div>
+      <div>${list.map(x=>shopRow(x.p, x.aisle?('Aisle '+x.aisle):x.a.name)).join('')}</div>
+    </section>`;
+  };
+  return codes.map(c=>block(c,groups[c])).join('') +
+    (none.length?`<section class="aisle">
+      <div class="aisle-head"><span class="badge">?</span>
+        <span class="aisle-name">No store set</span>
+        <span class="pill">${none.length}</span></div>
+      <div>${none.map(x=>shopRow(x.p, x.a.name+' \u00b7 '+x.p.sub)).join('')}</div>
+    </section>`:'');
+}
+
+function renderShop(){
+  const n=onListCount();
+  document.getElementById('view').innerHTML = n
+    ? shopToggle() + (S.shopView==='store' ? shopByStore() : shopAZ())
+    : '<p class="note">Nothing on the list yet. Tick items on the List tab.</p>';
+}
+
+function renderHistory(){
+  const h=S.history;
+  document.getElementById('view').innerHTML = h.length ? h.map((x,i)=>`
+    <section class="hist">
+      <button class="hist-head" data-act="fold-h" data-i="${i}">
+        <span class="caret" style="${x.open?'':'transform:rotate(-90deg)'}">▼</span>
+        <span class="t">${esc(x.title)}</span>
+        <span class="pill">${x.items.length} items · ${x.bought} purchased</span>
+      </button>
+      ${x.open?`<ul>${x.items.map(it=>`<li>${esc(it.name)}${it.buy>1?' × '+it.buy:''}${it.stores?' · '+esc(it.stores):''}${it.bought?' ✓':''}</li>`).join('')}</ul>`:''}
+    </section>`).join('') : '<p class="note">No shops saved yet.</p>';
+}
+
+function renderBar(){
+  const bar=document.getElementById('bar');
+  if(S.tab==='history'){ bar.hidden=true; return; }
+  bar.hidden=false;
+  const n=onListCount(), b=boughtCount();
+  bar.innerHTML = `<span class="status">${S.dirty?'<b>Unsaved changes</b> · ':''}${n} on list, ${b} purchased</span>
+    <button class="save" data-act="savehist" ${n?'':'disabled'}>Save to History</button>`;
+}
+
+function render(){
+  const y=window.scrollY;
+  renderTabs();
+  S.tab==='list'?renderList():S.tab==='shop'?renderShop():renderHistory();
+  renderBar();
+  window.scrollTo(0,y);
+}
+
+/* ---------- modals ---------- */
+const host = () => document.getElementById('modalHost');
+const closeModal = () => { host().innerHTML=''; };
+
+function modal(title, fields, onOk, okLabel){
+  host().innerHTML = `<div class="scrim"><div class="modal">
+    <h2>${esc(title)}</h2>
+    <div class="body">${fields.map((f,i)=>
+      `<label>${esc(f.label)} ${f.opt?'<span>(optional)</span>':''}</label>
+       <input id="f${i}" placeholder="${esc(f.ph||'')}" value="${esc(f.val||'')}" ${f.list?'list="storecodes"':''}>`).join('')}</div>
+    <div class="acts">
+      <button class="btn" data-m="cancel">Cancel</button>
+      <button class="btn go" data-m="ok">${esc(okLabel||'Add')}</button>
+    </div></div></div>`;
+  host().querySelector('#f0').focus();
+  host().onclick = e=>{
+    if(e.target.classList.contains('scrim')||e.target.dataset.m==='cancel') return closeModal();
+    if(e.target.dataset.m==='ok'){
+      const vals=fields.map((f,i)=>host().querySelector('#f'+i).value.trim());
+      if(!vals[0]) return host().querySelector('#f0').focus();
+      closeModal(); onOk(vals);
+    }
+  };
+  host().onkeydown = e=>{
+    if(e.key==='Escape') closeModal();
+    if(e.key==='Enter') host().querySelector('[data-m="ok"]').click();
+  };
+}
+
+function storeModal(p){
+  let rows = p.stores.length ? p.stores.map(s=>({...s})) : [{code:'',aisle:''}];
+  const draw = ()=>{
+    host().innerHTML = `<div class="scrim"><div class="modal">
+      <h2>Stores &amp; aisles · ${esc(p.name)}</h2>
+      <div class="body">
+        <div class="shead"><span>Store code</span><span>Aisle at that store</span><span></span></div>
+        ${rows.map((r,i)=>`<div class="srow">
+          <input data-i="${i}" data-k="code" list="storecodes" placeholder="CO" value="${esc(r.code)}" maxlength="4">
+          <input data-i="${i}" data-k="aisle" placeholder="e.g. 7, Fridge, Deli" value="${esc(r.aisle)}">
+          <button class="x" data-r="${i}" title="Remove store">✕</button>
+        </div>`).join('')}
+        <button class="addstore" data-add="1">+ Add store</button>
+        <p class="hint">Any code works. The Store codes list on the List tab has all of yours.</p>
+      </div>
+      <div class="acts">
+        <button class="btn" data-m="cancel">Cancel</button>
+        <button class="btn go" data-m="ok">Save</button>
+      </div></div></div>`;
+  };
+  const read = ()=>{
+    host().querySelectorAll('.srow input').forEach(el=>{ rows[+el.dataset.i][el.dataset.k]=el.value; });
+  };
+  draw();
+  host().onclick = e=>{
+    if(e.target.classList.contains('scrim')||e.target.dataset.m==='cancel') return closeModal();
+    if(e.target.dataset.add){ read(); rows.push({code:'',aisle:''}); draw(); return; }
+    if(e.target.dataset.r!==undefined){
+      read(); rows.splice(+e.target.dataset.r,1);
+      if(!rows.length) rows=[{code:'',aisle:''}];
+      draw(); return;
+    }
+    if(e.target.dataset.m==='ok'){
+      read();
+      p.stores = rows.map(r=>({code:r.code.trim().toUpperCase(), aisle:r.aisle.trim()}))
+                     .filter(r=>r.code)
+                     .sort((a,b)=>cmp(a.code,b.code));
+      closeModal(); S.dirty=true; save(); render();
+    }
+  };
+  host().onkeydown = e=>{ if(e.key==='Escape') closeModal(); };
+}
+
+function addItem(aisle, sub){
+  modal('Add item · '+aisle.name+(sub?' · '+sub:''),
+    [{label:'Item', ph:'e.g. Tasty Cheese'},
+     {label:'Sub-category', val:sub||'', ph:subsOf(aisle).slice(0,3).join(' · ')||'Other'},
+     {label:'Quantity', opt:1, ph:'e.g. 500g · 2 Pack · 1lt'},
+     {label:'Store codes', opt:1, ph:'e.g. CO/WW/AL', list:1}],
+    v=>{
+      aisle.products.push({
+        id:'n'+(++seq)+'-'+Math.random().toString(36).slice(2,7), name:v[0], sub:v[1]||'Other', qty:v[2],
+        stores:v[3].split('/').map(c=>c.trim().toUpperCase()).filter(Boolean).map(c=>({code:c,aisle:''})),
+        buy:1, onList:false, bought:false, by:ME
+      });
+      logEvent('add', v[0], aisle.name);
+      sortAisle(aisle); aisle.collapsed=false; S.dirty=true; save(); render();
+    });
+}
+
+function quickAdd(){
+  modal('Quick add to the list',
+    [{label:'Item', ph:'e.g. Milk'},
+     {label:'Quantity', opt:1, ph:'e.g. 2lt'},
+     {label:'Store codes', opt:1, ph:'e.g. CO/WW', list:1}],
+    v=>{
+      let a = S.aisles.find(x=>x.name==='Requests');
+      if(!a){ a={id:'req',name:'Requests',collapsed:false,products:[]}; S.aisles.push(a); sortAisles(); }
+      a.products.push({
+        id:'q'+(++seq)+'-'+Math.random().toString(36).slice(2,7),
+        name:v[0], sub:ME||'Guest', qty:v[1],
+        stores:v[2].split('/').map(c=>c.trim().toUpperCase()).filter(Boolean).map(c=>({code:c,aisle:''})),
+        buy:1, onList:true, bought:false, by:ME, wantedBy:ME
+      });
+      logEvent('add', v[0], 'Requests');
+      sortAisle(a); a.collapsed=false; S.dirty=true; save(); render();
+    }, 'Add to list');
+}
+
+function askName(force){
+  modal('Who are you shopping as?',
+    [{label:'Your name', val:force?ME:'', ph:'e.g. Scotty'}],
+    async v=>{ ME=v[0]; try{ localStorage.setItem('houselist:me', ME); }catch(e){} render(); },
+    'Save');
+}
+
+/* ---------- actions ---------- */
+function findP(id){ for(const a of S.aisles){ const p=a.products.find(x=>x.id===id); if(p) return [a,p]; } return [null,null]; }
+
+document.addEventListener('click', e=>{
+  const tb=e.target.closest('[data-tab]');
+  if(tb){ S.tab=tb.dataset.tab; render(); return; }
+  const el=e.target.closest('[data-act]');
+  if(!el) return;
+  const act=el.dataset.act;
+  const [pa,p] = el.dataset.p ? findP(el.dataset.p) : [null,null];
+  const aisle = el.dataset.a ? S.aisles.find(x=>x.id===el.dataset.a) : pa;
+  let touched=true;
+
+  switch(act){
+    case 'fold': aisle.collapsed=!aisle.collapsed; touched=false; break;
+    case 'clear': allProducts().forEach(x=>{x.onList=false;x.bought=false}); break;
+    case 'toggle': p.onList=!p.onList; p.wantedBy = p.onList?ME:''; if(!p.onList) p.bought=false; break;
+    case 'bought': p.bought=!p.bought; if(p.bought){ p.onList=true; p.boughtBy=ME; } break;
+    case 'buy+': p.buy++; break;
+    case 'buy-': p.buy=Math.max(1,p.buy-1); break;
+    case 'stores': storeModal(p); return;
+    case 'refexp': S.refCats[el.dataset.a]=!S.refCats[el.dataset.a]; renderList(); return;
+    case 'jump': {
+      const aid = el.dataset.a || el.dataset.cat;
+      const sub = el.dataset.sub || '';
+      const a = S.aisles.find(x=>x.id===aid);
+      if(a) a.collapsed=false;
+      S.focus = {a:aid, sub}; S.allItems = false;
+      S.refOpen = false;
+      S.query=''; render();
+      window.scrollTo({top:0, behavior:'smooth'});
+      return;
+    }
+    case 'clearfocus':
+      S.focus=null; S.allItems=false; S.catsOpen=true; S.query=''; render();
+      window.scrollTo({top:0,behavior:'smooth'}); return;
+    case 'allcats':
+      if(S.focus||S.allItems){ S.focus=null; S.allItems=false; S.catsOpen=true; }
+      else S.catsOpen=!S.catsOpen;
+      S.query=''; render(); window.scrollTo({top:0,behavior:'smooth'}); return;
+    case 'addaisle':
+      modal('Add category',[{label:'Category name', ph:'e.g. Frozen Food'}], v=>{
+        S.aisles.push({id:'n'+(++seq),name:v[0],collapsed:false,products:[]});
+        sortAisles(); logEvent('add', v[0]+' (category)', ''); S.dirty=true; save(); render(); });
+      return;
+    case 'shopview': S.shopView=el.dataset.v; render(); return;
+    case 'allitems':
+      S.allItems=!S.allItems; S.focus=null; S.query='';
+      if(S.allItems) S.aisles.forEach(x=>x.collapsed=false);
+      render(); window.scrollTo({top:0,behavior:'smooth'}); return;
+    case 'browse': S.refOpen=true; render();
+      requestAnimationFrame(()=>{ const n=document.getElementById('refbox'); if(n) n.scrollIntoView({behavior:'smooth',block:'start'}); });
+      return;
+    case 'more': S.limit+=50; renderList(); return;
+    case 'rename': askName(true); return;
+    case 'quickadd': quickAdd(); return;
+    case 'del':
+      if(!confirm(`Delete "${p.name}" from ${pa.name} · ${p.sub}?`)) return;
+      logEvent('del', p.name, pa.name);
+      pa.products = pa.products.filter(x=>x.id!==p.id); break;
+    case 'additem': addItem(aisle, el.dataset.sub||''); return;
+    case 'addsub':
+      modal('Add sub-category · '+aisle.name,
+        [{label:'Sub-category', ph:'e.g. Frozen Food'},
+         {label:'First item', ph:'e.g. Peas'}],
+        v=>{ aisle.products.push({id:'n'+(++seq),name:v[1],sub:v[0],qty:'',stores:[],buy:1,onList:false,bought:false,by:ME});
+             logEvent('add', v[1], aisle.name+' \u00b7 '+v[0]);
+             sortAisle(aisle); aisle.collapsed=false; S.dirty=true; save(); render(); });
+      return;
+    case 'delaisle':
+      if(!confirm(`Delete the whole "${aisle.name}" category and its ${aisle.products.length} items?`)) return;
+      logEvent('del', aisle.name+' ('+aisle.products.length+' items)', '');
+      S.aisles = S.aisles.filter(x=>x.id!==aisle.id); break;
+    case 'savehist': {
+      const items = allProducts().filter(x=>x.onList)
+        .map(x=>({name:x.name, buy:x.buy, bought:x.bought, stores:storeText(x)}));
+      S.history.unshift({title:S.title, items, bought:items.filter(i=>i.bought).length, open:false});
+      allProducts().forEach(x=>{x.onList=false;x.bought=false});
+      S.title='Shop — '+fmtDate(new Date());
+      S.dirty=false; S.tab='history'; save(); render(); return;
+    }
+    case 'fold-h': S.history[+el.dataset.i].open=!S.history[+el.dataset.i].open; render(); return;
+  }
+  if(touched) S.dirty=true;
+  save(); render();
+});
+
+document.addEventListener('toggle', e=>{
+  if(e.target.id==='refbox') S.refOpen = e.target.open;
+}, true);
+
+document.addEventListener('input', e=>{
+  if(e.target.id==='q'){
+    S.query=e.target.value; S.limit=50; renderList();
+    const i=document.getElementById('q'); i.focus(); i.setSelectionRange(i.value.length,i.value.length);
+  }
+  if(e.target.id==='title'){ S.title=e.target.value; S.dirty=true; save(); renderBar(); }
+});
+
+/* ---------- boot ---------- */
+(async function(){
+  document.getElementById('storecodes').innerHTML =
+    DATA.stores.map(s=>`<option value="${esc(s.code)}">${esc(s.name)}</option>`).join('');
+  try{ ME = localStorage.getItem('houselist:me') || ''; }catch(e){ ME=''; }
+
+  if(!SB){
+    setSync('Not connected — add your Supabase anon key in the file');
+    normalise(); render();
+    if(!ME) askName(false);
+    return;
+  }
+
+  try{
+    const { data, error } = await SB.from('house_list')
+      .select('rev,data,updated_by').eq('id', ROW_ID).maybeSingle();
+    if(error) throw error;
+    if(data && data.data && data.data.aisles && data.data.aisles.length){
+      const d = data.data;
+      REV = data.rev || 0;
+      S.title = d.title || S.title;
+      S.history = d.history || [];
+      S.log = d.log || [];
+      if(S.log.length) seenAt = S.log[0].t;
+      S.aisles = d.aisles;
+      setSync('Connected · last change by '+(data.updated_by||'someone'));
+    }else{
+      REV = 1;
+      await SB.from('house_list').upsert({ id:ROW_ID, rev:1, updated_by:ME||'Someone',
+        data:{ title:S.title, aisles:S.aisles, history:S.history, log:S.log } });
+      setSync('Shared list created');
+    }
+  }catch(e){
+    setSync('Connect failed — check the anon key and that setup SQL was run');
+  }
+
+  normalise();
+  render();
+  if(!ME) askName(false);
+
+  try{
+    SB.channel('house_list_'+ROW_ID)
+      .on('postgres_changes',
+        { event:'*', schema:'public', table:'house_list', filter:'id=eq.'+ROW_ID },
+        payload => applyRemote(payload.new))
+      .subscribe();
+  }catch(e){}
+
+  setInterval(pull, 15000);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) pull(); });
+})();
+</script>
+</body>
+</html>
