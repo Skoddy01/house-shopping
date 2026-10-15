@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>FullScreen</key>
+			<true/>
+			<key>Icon</key>
+			<data>
+iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAADjUlEQVR4nO3dMW4UMRiG
+4dmII+QE0+YKaaiRqDgmFRI1N/FVoAAhQPtBls2Mf9vPU1LN/H5jzyar4fL4/LTBNQ9X
+/xXEwd/YOYjEQSQOInEQiYNIHETiIBIHkTiIxEEkDiJxEImDSBxE4iASB5E4iMRBJA4i
+cRCJg0gcROIgEgeROIjE8Zv2+Uue1XLE8WcZ+vhJHD/82oQ+vhPH9Rqa82XbLou/n+Of
+Eezv3m6rWnrneMn20BbeQtaN4+Wr3lbtY9E4bl3vtmQfK8bxfyvd1utjuTjuWeO2WB9r
+xXH/6raV+ljlo+zrLuq+xufbJeI46Md9nz2R+Y+V4w6CNvsRM3kcR69fm7qPmeM4Z+Xa
+vH1MG8eZa9Ym7WPCB9JeS7VP93w6287R8Ye4Tbd/TBVH9+VpvS/gdc1zrJRamH2KI2aS
+naNUGVu961k3jpor0Upe1VpxVF6DVvjaJn/mGGX0+7DPH6PuHKOUsQ11qTPEMdy422gX
+PGocgw66DXjZgz1zjDjicR9BRto5JihjG+ouholjoJlOcy8DHCujjHK+86X6zjFrGdsI
+t1Y6jvrjm/sG68ZRfHAr3GbRZ47KI1vnEaTizrFgGVvJuy4XR8EZLXvvhY6VaqPppc75
+UmXnUEbBUZSIo844img1BtI/jiKDqKYVGEvnOCqMoKzWezg9H0i73/wo9k6PqH3ikMUQ
+fXQ4VpQxytDOjkMZA43u1DiUMdYAz4tDGcON8aQ4lDHiMM+IQxmDjvTYj7KyGPoj7oE7
+hzJOcOiQj4pDGac5btSHxKGMkx008P5f9lFS2S/+9P+TPWWJg0gcROIgEgeROIjEQSQO
+InEQiYNIHETiIBIHkTiIxEEkDiJxEImDSBxE4iB6sy3mzq/stpVeOLPWznH/l7n3Mu+B
+PMFacXATcRCJg0gcROIgEgeROIjEQSQOInEQiYNIHETiIBIHkTgQB7ezcxCJg0gcROIg
+EgeROIjEQSQOInEQiYNIHETiIBIHkTiIxEEkDiJxEImDSBxE4iASB5E4iMRBJA4Kx7HU
+a1/Hmkz/OCpMoaC9wEwelprF/W8ub6e8+7xCGdu2XR6fn3pfA0VV2TkoqP9/qfHx/dfe
+l1DUh0+Xvhdg5yASB5E4iMRBJA4icRCJg8hvSInsHETiIBIHkTiIxEEkDiJxEImDSBxE
+4iASB5E4iMRBJA4icRCJg0gcROIgEgeRONiSbziZBEBXc5ACAAAAAElFTkSuQmCC
+			</data>
+			<key>IsRemovable</key>
+			<true/>
+			<key>Label</key>
+			<string>The Home Manager</string>
+			<key>PayloadDescription</key>
+			<string>Puts The Home Manager on the home screen.</string>
+			<key>PayloadDisplayName</key>
+			<string>The Home Manager</string>
+			<key>PayloadIdentifier</key>
+			<string>com.tmg.thehomemanager.webclip</string>
+			<key>PayloadType</key>
+			<string>com.apple.webClip.managed</string>
+			<key>PayloadUUID</key>
+			<string>958E5ECE-655A-4FDC-B570-205F1033189E</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>Precomposed</key>
+			<true/>
+			<key>URL</key>
+			<string>https://skoddy01.github.io/house-shopping/</string>
+		</dict>
+	</array>
+	<key>PayloadDisplayName</key>
+	<string>The Home Manager</string>
+	<key>PayloadIdentifier</key>
+	<string>com.tmg.thehomemanager</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>D3CEB842-6010-4B66-A5BA-745B57C24727</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>
