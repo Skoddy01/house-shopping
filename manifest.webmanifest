@@ -1,14 +1,15 @@
 {
   "name": "The Home Manager",
   "short_name": "The Home Manager",
-  "start_url": "/house-shopping/",
-  "scope": "/house-shopping/",
+  "id": "/house-shopping/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f2f1ea",
   "theme_color": "#143c2b",
   "icons": [
-    {"src": "icon-180.png", "sizes": "180x180", "type": "image/png"},
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}
+    {"src": "icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any"},
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
   ]
 }

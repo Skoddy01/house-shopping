@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="The Home Manager">
 <meta name="theme-color" content="#143c2b">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
 <title>The Home Manager</title>
 <style>
   :root{
@@ -325,6 +325,13 @@
     .toolbar .rhs{margin-left:0}
     .toolbar .rhs,.toolbar .rhs2{flex:1 1 46%;min-width:0}
   }
+  .addhome{position:fixed;inset:0;z-index:80;background:rgba(20,60,43,.88);display:flex;align-items:flex-end;justify-content:center;padding:18px}
+  .addhome[hidden]{display:none}
+  .addhome .card{background:#fff;border-radius:18px;padding:22px 20px 18px;max-width:520px;width:100%;margin-bottom:12px}
+  .addhome h2{margin:0 0 10px;font-size:22px}
+  .addhome ol{margin:0 0 16px;padding-left:22px}
+  .addhome li{margin:0 0 8px;font-size:16px;line-height:1.35}
+  .addhome .go{width:100%;border:0;border-radius:12px;padding:14px;background:#143c2b;color:#fff;font-weight:700;font-size:17px}
   @media (max-width:640px){
     .meal-meta{grid-template-columns:1fr}
     .job-meta{grid-template-columns:1fr}
@@ -341,6 +348,24 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
+
+<div class="addhome" id="addhome" hidden>
+  <div class="card">
+    <h2>Put this on the home screen</h2>
+    <ol>
+      <li>Stay in Safari. Do not use Chrome.</li>
+      <li>Tap the Share button. It is a square with an arrow pointing up.</li>
+      <li>On iPhone it is at the bottom of the screen. On iPad it is at the top right.</li>
+      <li>Scroll the list down. Do not swipe the coloured app icons.</li>
+      <li>Tap Add to Home Screen.</li>
+      <li>If you cannot see it, tap Edit Actions at the bottom of that list, turn Add to Home Screen on, then tap it.</li>
+      <li>Check the name says The Home Manager.</li>
+      <li>Tap Add at the top right.</li>
+      <li>Leave Safari. Tap the new The Home Manager icon.</li>
+    </ol>
+    <button class="go" id="addhomeok" type="button">I have added it</button>
+  </div>
+</div>
 
 <header class="top" id="top">
   <div class="appname">The Home Manager</div>
@@ -2291,8 +2316,27 @@ document.addEventListener('keydown', e=>{
   }
 });
 
+function isHomeApp(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+}
+function showAddHome(){
+  const box=document.getElementById('addhome');
+  if(!box) return;
+  if(isHomeApp()){ box.hidden=true; return; }
+  try{ if(localStorage.getItem('houselist:homeapp')==='1'){ box.hidden=true; return; } }catch(e){}
+  box.hidden=false;
+}
+document.addEventListener('click', e=>{
+  if(e.target&&e.target.id==='addhomeok'){
+    try{ localStorage.setItem('houselist:homeapp','1'); }catch(err){}
+    const box=document.getElementById('addhome');
+    if(box) box.hidden=true;
+  }
+});
+
 /* ---------- boot ---------- */
 (async function(){
+  showAddHome();
   document.getElementById('storecodes').innerHTML =
     DATA.stores.map(s=>`<option value="${esc(s.code)}">${esc(s.name)}</option>`).join('');
   try{ ME = localStorage.getItem('houselist:me') || ''; }catch(e){ ME=''; }
