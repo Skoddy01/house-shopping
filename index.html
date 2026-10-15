@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>House Shopping List</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="The Home Manager">
+<meta name="theme-color" content="#143c2b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>The Home Manager</title>
 <style>
   :root{
     --green:#143c2b; --green-2:#1c5138; --green-txt:#20573d;
@@ -22,9 +29,12 @@
   button{font:inherit;color:inherit;cursor:pointer}
   input,select{font:inherit}
 
-  .tabs{position:sticky;top:0;z-index:40;background:var(--green);display:flex;gap:4px;padding:0 14px}
+  .top{position:sticky;top:0;z-index:40;background:var(--green)}
+  .appname{color:#fff;font-size:22px;font-weight:700;padding:14px 18px 2px}
+  .tools,.tabs{display:flex;gap:4px;padding:0 14px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+  .tabs[hidden]{display:none}
   .tab{background:none;border:0;padding:16px 12px 13px;color:#a9c3b4;font-weight:700;font-size:17px;
-       display:flex;align-items:center;gap:9px;border-bottom:3px solid transparent}
+       display:flex;align-items:center;gap:9px;border-bottom:3px solid transparent;flex:none;white-space:nowrap}
   .tab.on{color:#fff;border-bottom-color:var(--gold)}
   .tab .n{background:rgba(255,255,255,.14);color:#dcebe2;border-radius:999px;min-width:26px;padding:2px 8px;font-size:13px;text-align:center}
   .tab.on .n{background:var(--gold);color:#2a1d02}
@@ -46,7 +56,7 @@
   .btn-danger{color:var(--red);border-color:var(--red-br);background:#fff}
   .btn-danger:hover{background:#fdf4f2}
 
-  .aisle{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:16px;overflow:hidden}
+  .aisle{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:16px;overflow:clip}
   .aisle-head{display:flex;align-items:center;gap:14px;padding:16px 18px;width:100%;background:none;border:0;text-align:left}
   .caret{color:#4a4a42;font-size:12px;width:12px;transition:transform .15s}
   .aisle.collapsed .caret{transform:rotate(-90deg)}
@@ -68,7 +78,7 @@
 
   .results{}
   .crumb{font-size:12px;font-weight:700;color:var(--mute);margin-bottom:3px}
-  .subhead.sticky{position:sticky;top:56px;z-index:20}
+  .subhead.sticky{position:sticky;top:var(--topbar,120px);z-index:20}
   .more{display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid var(--line);
         background:#fbfaf4;font-size:15px;color:var(--mute)}
   .more .btn{margin-left:auto}
@@ -78,18 +88,28 @@
   .row.bought .row-name{text-decoration:line-through;color:var(--mute)}
   .tick{flex:none;width:30px;height:30px;border-radius:9px;border:1.5px solid #cfd4ce;background:#fff;
         display:grid;place-items:center;padding:0;color:transparent;font-size:16px}
-  .row.on .tick{border-color:var(--green);background:var(--green);color:#fff}
+  .row.on .tick,.tick.on{border-color:var(--green);background:var(--green);color:#fff}
   .row-main{flex:1;min-width:0}
-  .row-name{font-size:18px;font-weight:700;margin-bottom:7px;line-height:1.25}
+  .row.item{flex-direction:column;align-items:stretch;gap:8px}
+  .row.item .topbit{display:flex;align-items:center;gap:14px}
+  .row.item .topbit:has(.crumb){align-items:flex-end}
+  .row.item .lowbit{display:flex;align-items:center;gap:14px}
+  .weekhead{border-top:1px solid var(--line-2);margin:18px 0 10px;padding:14px 2px 4px;
+           font-size:20px;font-weight:700;color:var(--green)}
+  .star{color:#1f8a4c;font-weight:700;font-size:18px;line-height:1;white-space:nowrap}
   .chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .chip{border:1px solid var(--line-2);background:#fff;border-radius:10px;padding:6px 11px;font-size:14px;font-weight:600}
   .chip.qty{background:var(--chip-bg);border-color:#d5e3d9;color:var(--green-txt)}
   .store{display:flex;align-items:center;gap:6px;border:1px solid var(--line-2);background:#fff;
          border-radius:10px;padding:5px 10px;font-size:14px;font-weight:700;color:var(--green-txt)}
   .store:hover{background:#f2f7f3;border-color:#a9c9b6}
-  .store.empty{border-style:dashed;color:#9a9a91;font-weight:600}
+  .store.add{border-style:dotted;border-color:#9a9a91;color:#9a9a91;font-weight:600}
+  .storepair{display:inline-flex;align-items:center;gap:6px}
+  .storepick{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:50vh;overflow:auto}
+  .storepick .store{justify-content:flex-start;width:100%}
   .store .code{background:var(--chip-bg);border-radius:6px;padding:2px 7px}
-  .store .code .a{color:var(--gold-txt);margin-left:5px}
+  .store .code .a,.store .aisle{color:var(--gold-txt);margin-left:6px;font-weight:700}
+  .store .need{color:#9a9a91;font-weight:600;margin-left:6px}
   .store .lab{font-size:12px;font-weight:700;color:#9a9a91;letter-spacing:.04em;margin-right:2px}
   .stepper{display:flex;align-items:center;border:1px solid var(--line-2);border-radius:10px;overflow:hidden;background:#fff}
   .stepper .lab{padding:6px 10px;font-size:12px;font-weight:700;color:#9a9a91;letter-spacing:.04em}
@@ -104,11 +124,17 @@
   .sq.no{color:var(--red);border-color:var(--red-br)}
   .sq.no:hover{background:#fdf4f2}
   .aisle-foot{display:flex;flex-wrap:wrap;gap:12px;padding:16px 18px;border-top:1px solid var(--line)}
+  .menu-foot{flex-wrap:nowrap;align-items:center}
+  .menu-foot .dayacts{margin-left:auto;display:flex;gap:10px;flex:none}
+  .menu-foot .btn{white-space:nowrap}
+  .menu-foot .btn[disabled]{opacity:.4;cursor:default}
+  .meal-lock{color:#4a4a42;margin:0 0 8px;font-size:15px}
   .empty{padding:18px;color:var(--mute);border-top:1px solid var(--line)}
 
   .bar{position:fixed;left:0;right:0;bottom:0;z-index:45;background:rgba(246,245,238,.96);
        border-top:1px solid var(--line);backdrop-filter:blur(6px);display:flex;align-items:center;
        justify-content:space-between;gap:14px;padding:12px 18px}
+  .bar[hidden]{display:none}
   .bar .status{font-size:15px;color:#5c5c54}
   .bar .status b{color:var(--gold-txt)}
   .bar .save{background:var(--gold);border:0;color:#fff;font-weight:700;font-size:17px;padding:15px 26px;border-radius:12px}
@@ -205,6 +231,93 @@
   .toolbar .btn-black.on:hover{background:#a8422f}
   .toolbar .btn-solid.act{background:#c0503c;border-color:#c0503c;color:#fff}
   .toolbar .btn-solid.act:hover{background:#a8422f}
+  .meal-meta{display:grid;grid-template-columns:minmax(140px,1.4fr) minmax(120px,.8fr) 150px;gap:12px;margin-bottom:0}
+  .meal-meta input,.meal-meta select{width:100%;border:1px solid var(--line-2);border-radius:10px;padding:12px;background:#fbfaf4;font-size:16px;min-height:46px}
+  .meal-meta input:focus,.meal-meta select:focus{outline:none;border-color:var(--green);background:#fff}
+  .row.meal{align-items:flex-start;padding:22px 20px 20px}
+  .row.meal.editing{flex-direction:column;align-items:stretch;gap:14px}
+  .meal-top{display:flex;align-items:center;gap:12px}
+  .row.meal .mname{width:100%;border:1px solid var(--line-2);border-radius:10px;padding:12px;background:#fbfaf4;font-size:20px;font-weight:700;margin:0}
+  .meal-top .mname{flex:1;min-width:0;width:auto}
+  .row.meal.editing .meal-meta{margin:0}
+  .row.meal.editing .when-bit{margin:0}
+  .row.meal.editing .chips{margin:0}
+  .row.meal.editing .row-acts{margin-left:0}
+  .row.meal .meal-when{display:flex;flex-direction:column;align-items:stretch;gap:14px;margin:0}
+  .when-bit{display:flex;flex-direction:column;gap:8px}
+  .when-lab{font-size:13px;font-weight:700;color:var(--mute)}
+  .daybtns{display:flex;flex-wrap:wrap;gap:8px}
+  .daybtns button{min-width:48px;height:42px;padding:0 10px;border-radius:10px;border:1px solid var(--line-2);background:#fff;font-weight:700}
+  .daybtns button.on{background:var(--green);border-color:var(--green);color:#fff}
+  .row.meal .chips{margin:0 0 18px;gap:10px}
+  .row.meal .meal-add{margin-top:0}
+  .meal-when select{height:42px;min-width:180px;border:1px solid var(--line-2);border-radius:10px;padding:8px 12px;background:#fbfaf4;font-size:16px}
+  .mblock{border:1px solid var(--line);border-radius:12px;padding:12px 12px 0;margin-bottom:12px}
+  .mblock .daybtns{margin:0 0 18px}
+  .modal select,.modal input[type="time"]{width:100%;padding:14px 16px;margin-bottom:20px;font-size:17px;border:1px solid var(--line-2);border-radius:12px;background:#fbfaf4}
+  .meal-add{display:flex;gap:10px;align-items:center;margin-top:10px}
+  .meal-add input{flex:1;border:1px solid var(--line-2);border-radius:10px;padding:10px 12px;background:#fbfaf4;font-size:16px}
+  .meal-add input:focus{outline:none;border-color:var(--green);background:#fff}
+  .meal-add .go{flex:none}
+  .meal-add .mqty{width:74px;flex:none}
+  .modal textarea{width:100%;min-height:96px;padding:14px 16px;margin-bottom:20px;font-size:17px;font-family:inherit;
+                  border:1px solid var(--line-2);border-radius:12px;background:#fbfaf4;resize:vertical}
+  .modal textarea:focus{outline:none;border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(20,60,43,.09)}
+  .modal input[type="date"]{width:100%;padding:14px 16px;margin-bottom:20px;font-size:17px;
+                            border:1px solid var(--line-2);border-radius:12px;background:#fbfaf4}
+  .row.job{flex-direction:column;align-items:stretch;padding:22px 20px 20px}
+  .row.job .job-body{display:flex;align-items:flex-start;gap:14px;width:100%}
+  .row.job .job-body .row-main{flex:1;min-width:0}
+  .job-foot{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .job-foot .btn[disabled]{opacity:.4;cursor:default}
+  .equip-lock{display:flex;align-items:center;gap:10px;margin:0 0 8px;font-size:16px}
+  .equip{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+  .equip .ename{flex:1;min-width:0;border:1px solid var(--line-2);border-radius:10px;padding:10px 12px;background:#fbfaf4;font-size:16px}
+  .equip .ename:focus{outline:none;border-color:var(--green);background:#fff}
+  .ebox{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+  .modal .ebox input.eg{width:28px;height:28px;flex:none;margin:0;padding:0}
+  .modal .ebox input.en{flex:1;width:auto;margin:0}
+  .row.job.done{background:#f6f5ef}
+  .row.job .jname{width:100%;border:1px solid var(--line-2);border-radius:10px;padding:12px;background:#fbfaf4;font-size:20px;font-weight:700;margin:0 0 16px;color:#1e1e1a}
+  .row.job.done .jname{color:var(--mute)}
+  .row.job .jname:focus{outline:none}
+  .job-meta{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin:0 0 16px}
+  .job-meta input,.row.job textarea{width:100%;border:1px solid var(--line-2);border-radius:10px;padding:12px;background:#fbfaf4;font-size:16px;font-family:inherit}
+  .row.job textarea{min-height:84px;resize:vertical;margin:0}
+  .job-meta input:focus,.row.job textarea:focus{outline:none;border-color:var(--green);background:#fff}
+  .row.job .when-bit{margin-bottom:16px}
+  .row.job .row-acts{margin-left:0}
+  .roleline{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+  .roleline .when-lab,.roleline .btn,.roleline .chip{flex:none;white-space:nowrap}
+  .roleline .when-lab{margin-right:4px}
+  .gantt-scroll{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px}
+  .gantt{display:grid;grid-template-columns:168px repeat(var(--days), 34px);min-width:max-content}
+  .gantt-corner{position:sticky;left:0;z-index:3;background:#fbfaf4;border-bottom:1px solid var(--line)}
+  .gantt-month{padding:8px 8px 4px;font-size:13px;font-weight:700;color:var(--green-txt);background:#fbfaf4;border-bottom:1px solid var(--line)}
+  .gantt-day{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 8px;font-size:11px;color:var(--mute);background:#fbfaf4;border-bottom:1px solid var(--line);border-left:1px solid #f0efe6}
+  .gantt-day b{font-size:11px}
+  .gantt-day.mon{border-left:1px solid var(--line-2)}
+  .gantt-day.today{color:var(--green);background:var(--gold-bg)}
+  .gantt-label{position:sticky;left:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;min-height:48px}
+  .gantt-label .gn{font-weight:700;font-size:14px;line-height:1.2}
+  .gantt-label .gs{font-size:12px;color:var(--mute);margin-top:2px}
+  .gantt-cell{height:48px;border-bottom:1px solid #f3f2ea;border-left:1px solid #f4f3ec;background:#fff}
+  .gantt-cell.wknd{background:#fafaf6}
+  .gantt-cell.today{background:#fdf8ea}
+  .gantt-cell.mark{background:#1c5138;border-left-color:#1c5138}
+  .gantt-cell.mark.done{background:#c08a2a;border-left-color:#c08a2a}
+  .gantt-cell.mark.start{border-top-left-radius:8px;border-bottom-left-radius:8px;margin-left:3px}
+  .gantt-cell.mark.cap{border-top-right-radius:8px;border-bottom-right-radius:8px;margin-right:3px}
+  .gantt-key{display:flex;gap:16px;align-items:center;font-size:14px;color:#4a4a42;margin:0 0 14px}
+  .gantt-key i{display:inline-block;width:28px;height:12px;border-radius:6px;margin-right:6px;vertical-align:-1px}
+  .gantt-key .go{background:#1c5138}
+  .gantt-key .fin{background:#c08a2a}
+  .sblock{border:1px solid var(--line);border-radius:12px;padding:12px 12px 0;margin:8px 0 12px}
+  .shead{display:flex;align-items:center;justify-content:space-between;font-weight:700;margin-bottom:8px}
+  .stagebox{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0 0;background:#fbfaf4}
+  .stagebox .sname{width:100%;border:1px solid var(--line-2);border-radius:10px;padding:12px;background:#fff;font-size:16px;margin-bottom:8px}
+  .gantt-label.sub{padding-left:22px}
+  .gantt-label.sub .gn{font-weight:600;font-size:13px}
   .viewtabs{display:flex;gap:10px;margin-bottom:14px}
   .viewtabs .btn{flex:1;text-align:center}
   .viewtabs .btn.on{background:var(--green);border-color:var(--green);color:#fff}
@@ -213,8 +326,12 @@
     .toolbar .rhs,.toolbar .rhs2{flex:1 1 46%;min-width:0}
   }
   @media (max-width:640px){
+    .meal-meta{grid-template-columns:1fr}
+    .job-meta{grid-template-columns:1fr}
     .row{flex-wrap:wrap}
+    .row.item{flex-wrap:nowrap}
     .row-acts{margin-left:44px}
+    .row.item .row-acts{margin-left:0}
     .row-name{font-size:17px}
     .wrap{padding:12px 10px 16px}
     .aisle-head,.row,.subhead{padding-left:14px;padding-right:14px}
@@ -225,15 +342,22 @@
 </head>
 <body>
 
-<nav class="tabs" id="tabs"></nav>
+<header class="top" id="top">
+  <div class="appname">The Home Manager</div>
+  <nav class="tools" id="tools"></nav>
+  <nav class="tabs" id="tabs"></nav>
+</header>
 <main class="wrap" id="view"></main>
 <div class="bar" id="bar" hidden></div>
 <div id="modalHost"></div>
 <div id="toasts"></div>
 <datalist id="storecodes"></datalist>
+<datalist id="menuitems"></datalist>
+<datalist id="cheflist"></datalist>
+<datalist id="peoplelist"></datalist>
 
 <script>
-const DATA = {"stores":[{"code":"AB","name":"Auto Barn"},{"code":"AL","name":"Aldi"},{"code":"AL1","name":"Tweed Heads","sub":true},{"code":"AL2","name":"Tweed Heads South","sub":true},{"code":"BG","name":"Butcher Gold Coast"},{"code":"BN","name":"Butcher North Coast"},{"code":"BO","name":"Butcher Online"},{"code":"BU","name":"Bunnings"},{"code":"CM","name":"Coolangatta Markets"},{"code":"CO","name":"Coles"},{"code":"CO1","name":"Tweed Heads","sub":true},{"code":"CO2","name":"Tweed Heads South","sub":true},{"code":"CO3","name":"Banora","sub":true},{"code":"CS","name":"Cheap Shop"},{"code":"CW","name":"Chemist W’house"},{"code":"DD","name":"Double D Online"},{"code":"DM","name":"Dan Murphy"},{"code":"FS","name":"Fruit Shop"},{"code":"HP","name":"Health Products Online"},{"code":"K4","name":"Kings 4x4"},{"code":"KC","name":"Kirra Cafe"},{"code":"SB","name":"Smoked BBQ Co"},{"code":"SE","name":"Salt Of The Earth"},{"code":"WL","name":"Whole Life Health"},{"code":"WW","name":"Woolworths"},{"code":"WW1","name":"Tweed Heads","sub":true},{"code":"WW2","name":"Tweed Heads South","sub":true},{"code":"WW3","name":"Banora","sub":true}],"aisles":[{"id":"a23","name":"Alcohol","products":[{"id":"p435","name":"Better Beer — 0C/0S","info":"DM","sub":"Beer"},{"id":"p438","name":"Coopers Dry — Low Carb","info":"DM","qty":"x 6 pack","sub":"Beer"},{"id":"p437","name":"Ciroc Vodka — 1lt","info":"DM","sub":"Spirits"},{"id":"p436","name":"Ciroc Vodka — 700m","info":"DM","sub":"Spirits"},{"id":"p439","name":"Wine White — Bone","info":"DM","qty":"x 2","sub":"Wine"}]},{"id":"a21","name":"Bathroom Products","products":[{"id":"p427","name":"Eco Floss Picks","sub":"Dental"},{"id":"p426","name":"Toothpaste","sub":"Dental"},{"id":"p424","name":"Toilet Paper (4 Ply)","info":"CO/WW/AL","sub":"Paper"},{"id":"p425","name":"Deodorant Rexona","info":"CO","sub":"Personal Care"},{"id":"p420","name":"Handwashing Lotion — Foaming","info":"CO/WW","sub":"Personal Care"},{"id":"p421","name":"Razors — Disposable","info":"AL","sub":"Shaving"},{"id":"p422","name":"Razors — Packet","info":"AL","sub":"Shaving"},{"id":"p423","name":"Shaving Cream — Sensitive Skin","info":"AL","sub":"Shaving"}]},{"id":"a5","name":"Beverages","products":[{"id":"p186","name":"Coffee Bag — Organic","info":"IS","sub":"Coffee"},{"id":"p187","name":"Coffee Pods — 11","info":"AL","sub":"Coffee"},{"id":"p188","name":"Coffee Pods — 12","info":"AL","sub":"Coffee"},{"id":"p189","name":"Hazelnut Latte","info":"AL/CO","sub":"Coffee"},{"id":"p185","name":"Kirra-Coffee-beans","sub":"Coffee"},{"id":"p196","name":"SD-Ginger Beer With lime","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p195","name":"SD-SF — Blood Orange","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p191","name":"SD-SF — Lemon","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p194","name":"SD-SF — Passionfruit","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p192","name":"SD-SF — Pineapple","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p197","name":"SD-SF — Tonic Water","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p193","name":"SD-SF — Watermelon","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p190","name":"Soda Stream Gas Refill","info":"CO/WW","sub":"Soft Drink & Soda Stream"},{"id":"p184","name":"Chai Spice","info":"CO/WW","sub":"Tea"},{"id":"p199","name":"Tea — Bengal Spice","info":"CO/WW","sub":"Tea"},{"id":"p200","name":"Tea — Black","info":"CO/WW","sub":"Tea"},{"id":"p201","name":"Tea — Bush Dreaming","sub":"Tea"},{"id":"p202","name":"Tea — Earl Grey","info":"CO/WW","sub":"Tea"},{"id":"p203","name":"Tea — Green Tea & Lemon","info":"CO/WW","sub":"Tea"},{"id":"p204","name":"Tea — Peppermint","info":"CO/WW","sub":"Tea"},{"id":"p198","name":"Schweppes natural mineral water","info":"CO/WW/AL","sub":"Water"}]},{"id":"a3","name":"Butcher","products":[{"id":"p134","name":"Beef Chuck Roast","info":"BN/BG","sub":"Beef"},{"id":"p135","name":"Beef Chuck Steak Pieces","info":"BN/BG","sub":"Beef"},{"id":"p137","name":"Beef Mince","info":"AL","sub":"Beef"},{"id":"p139","name":"Beef Stewing Pieces 1kg","info":"BN/BG","sub":"Beef"},{"id":"p140","name":"Beef Tallow Grass","info":"BN","sub":"Beef"},{"id":"p147","name":"Corn Silverside","sub":"Beef"},{"id":"p148","name":"Cow’s Liver","sub":"Beef"},{"id":"p154","name":"Osso Buco","info":"BG","sub":"Beef"},{"id":"p141","name":"Chicken Breast","info":"AL","sub":"Chicken"},{"id":"p143","name":"Chicken Schnitzel","sub":"Chicken"},{"id":"p144","name":"Chicken Thighs","info":"AL","sub":"Chicken"},{"id":"p146","name":"Chicken Whole Split","info":"AL","sub":"Chicken"},{"id":"p145","name":"Chicken Wings","info":"AL","sub":"Chicken"},{"id":"p151","name":"Lamb Chops","sub":"Lamb"},{"id":"p152","name":"Lamb [Leg] Shoulder Boneless","info":"AL","sub":"Lamb"},{"id":"p149","name":"Lamb Mince","info":"CO/WW","sub":"Lamb"},{"id":"p153","name":"Lamb Ribs","sub":"Lamb"},{"id":"p136","name":"Beef Liver — Pet","info":"GB","sub":"Pet"},{"id":"p138","name":"Beef Mince — Pet","info":"WW/CO","sub":"Pet"},{"id":"p142","name":"Chicken Hearts — Pet","sub":"Pet"},{"id":"p150","name":"Lamb Mince — Pet","info":"WW/CC","sub":"Pet"},{"id":"p156","name":"Sausages — Pet","sub":"Pet"},{"id":"p133","name":"Bacon","info":"AL","sub":"Pork & Smallgoods"},{"id":"p161","name":"Ham","info":"AL","sub":"Pork & Smallgoods"},{"id":"p162","name":"Pepperoni","sub":"Pork & Smallgoods"},{"id":"p159","name":"Pork Loin roll","info":"AL","sub":"Pork & Smallgoods"},{"id":"p158","name":"Pork Mince","info":"CO/WW/AL","sub":"Pork & Smallgoods"},{"id":"p160","name":"Prosciutto","info":"AL","sub":"Pork & Smallgoods"},{"id":"p157","name":"Sausage — Thin","info":"BN/BG","sub":"Sausages"},{"id":"p155","name":"Sausages — Fat","info":"BN/BG","sub":"Sausages"}]},{"id":"a9","name":"Condiment Flavours","products":[{"id":"p237","name":"Char Siu Sauce","info":"CO/WW","sub":"Asian Sauces"},{"id":"p242","name":"Chinese Cooking Wine","info":"CO/WW","sub":"Asian Sauces"},{"id":"p249","name":"Fish Sauce","info":"CO/WW","sub":"Asian Sauces"},{"id":"p254","name":"Hoisin Sauce","info":"CO/WW","sub":"Asian Sauces"},{"id":"p259","name":"Mirin Seasoning","info":"CO/WW","sub":"Asian Sauces"},{"id":"p261","name":"Oyster Sauce","info":"CO/WW/AL","sub":"Asian Sauces"},{"id":"p271","name":"Tamarind Puree","info":"CO/WW/AL","sub":"Asian Sauces"},{"id":"p231","name":"Baby Capers","info":"CO/WW","sub":"Other"},{"id":"p275","name":"Pampas Puff Pastry","sub":"Other"},{"id":"p232","name":"Basil Paste — Gourmet","info":"CO/WW","sub":"Pastes"},{"id":"p238","name":"Chilli Paste — Gourmet G","info":"CO/WW","sub":"Pastes"},{"id":"p247","name":"Curry Paste Green — Valcom","info":"CO/WW","sub":"Pastes"},{"id":"p248","name":"Curry Paste Red — Valcom","info":"CO/WW","sub":"Pastes"},{"id":"p250","name":"Garlic Mince","info":"CO/WW","sub":"Pastes"},{"id":"p252","name":"Ginger — Organic Crushed","info":"CO/WW","sub":"Pastes"},{"id":"p251","name":"Ginger Paste — Gourmet G","info":"CO/WW","sub":"Pastes"},{"id":"p257","name":"Gourmet Garden Ginger","sub":"Pastes"},{"id":"p256","name":"Lemon Grass — Gourmet G","info":"CO/WW/AL","sub":"Pastes"},{"id":"p234","name":"Black pepper","info":"CO/WW/AL","sub":"Pepper"},{"id":"p236","name":"Black Peppercorns-Grinder","info":"CO/WW/AL","sub":"Pepper"},{"id":"p235","name":"Ground White Pepper","info":"CO/WW/AL","sub":"Pepper"},{"id":"p233","name":"Bay Leaves — Dried","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p239","name":"Chilli Powder — Kashmiri Mirch","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p240","name":"Chilli Powder — Madras","sub":"Spices & Herbs"},{"id":"p241","name":"Chilli Powder — Simply Org","info":"OL","sub":"Spices & Herbs"},{"id":"p243","name":"Cinnamon — Cylon Organic","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p245","name":"Cinnamon & Sugar Mix","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p244","name":"Cinnamon Sticks","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p246","name":"Coconut Amino Seasoning","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p253","name":"Herbs — De Provence","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p260","name":"Mustard Powder","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p263","name":"Paprika — Smoked","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p262","name":"Paprika — Sweet","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p264","name":"Pickling Spice","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p268","name":"Cubes Beef — Massell","info":"CO/WW","sub":"Stock & Bases"},{"id":"p269","name":"Cubes Chicken — Massell","info":"CO/WW","sub":"Stock & Bases"},{"id":"p270","name":"Cubes Vegetable — Massell","info":"CO/WW","sub":"Stock & Bases"},{"id":"p265","name":"Real Gourmet — Vegeta","info":"CO/WW","sub":"Stock & Bases"},{"id":"p274","name":"Romano-Italian Tomato Paste-Organic","sub":"Tomato"},{"id":"p273","name":"Tomato Paste — Logo’s","info":"CO/WW/AL","sub":"Tomato"},{"id":"p272","name":"Tomatoes Sun Dried","info":"CO/WW/AL","sub":"Tomato"},{"id":"p255","name":"Italian Glaze","info":"CO/WW","sub":"Vinegar & Glaze"},{"id":"p266","name":"Rice Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar & Glaze"},{"id":"p258","name":"Mint Water","info":"WW","sub":"Waters & Essences"},{"id":"p267","name":"Rose Water","info":"CO/WW/CW","sub":"Waters & Essences"}]},{"id":"a8","name":"Condiments","products":[{"id":"p223","name":"Mustard — Dijon","info":"CO/WW","sub":"Mustard"},{"id":"p224","name":"Mustard — French","info":"CO/WW","sub":"Mustard"},{"id":"p225","name":"Mustard — Hot English","info":"CO/WW","sub":"Mustard"},{"id":"p221","name":"Gravy — Gravox Supreme","info":"CO/WW","sub":"Other"},{"id":"p222","name":"Mayo Whole Egg","info":"CO","sub":"Other"},{"id":"p230","name":"Smoked Garlic Chilli Sauce — Old Bones Chill Co","sub":"Other"},{"id":"p229","name":"Tahini Sauce","info":"CO/WW","sub":"Other"},{"id":"p226","name":"Soy — Super Light","info":"CO/WW","sub":"Soy"},{"id":"p227","name":"Soy — Superior Dark","info":"CO/WW","sub":"Soy"},{"id":"p228","name":"Soy — Tamari","info":"CO/WW","sub":"Soy"}]},{"id":"a4","name":"Dairy","products":[{"id":"p163","name":"Butter — Kerry Gold","info":"WW","sub":"Butter"},{"id":"p164","name":"Butter — WestGold Grass Fed — Salted","info":"CO/WW","sub":"Butter"},{"id":"p166","name":"Cheese — Brie — Triple Cream","info":"AL","sub":"Cheese"},{"id":"p168","name":"Cheese — Cottage","info":"CO/WW/AL","sub":"Cheese"},{"id":"p169","name":"Cheese — Cracker Barrel","info":"CO/WW","sub":"Cheese"},{"id":"p167","name":"Cheese — Cream Cheese","info":"AL/CO/WW","sub":"Cheese"},{"id":"p171","name":"Cheese — Extra Tasty Cheddar — Marsh","info":"WW","sub":"Cheese"},{"id":"p170","name":"Cheese — Feta Dodin Ii- Block","info":"CO/WW","sub":"Cheese"},{"id":"p172","name":"Cheese — Hallomi — Block","info":"CO/WW/AL","sub":"Cheese"},{"id":"p173","name":"Cheese — Maasdam — Sheets","info":"AL","sub":"Cheese"},{"id":"p174","name":"Cheese — Mozzarella — Grated","info":"AL","sub":"Cheese"},{"id":"p175","name":"Cheese — Parmesan — Grated","info":"AL","sub":"Cheese"},{"id":"p176","name":"Cheese — Smooth Blue","info":"AL","sub":"Cheese"},{"id":"p177","name":"Cheese — Tasty — Grated","sub":"Cheese"},{"id":"p165","name":"Mersey Valley-Pickled Onion","sub":"Cheese"},{"id":"p178","name":"Cream — Sour","info":"CO/WW/AL","sub":"Cream"},{"id":"p179","name":"Cream — Thickened","info":"CO/WW/AL","sub":"Cream"},{"id":"p180","name":"Ice Cream — No Added Sugar — Chocolate","info":"AL","sub":"Ice Cream"},{"id":"p181","name":"Ice Cream — No Added Sugar — Vanilla","info":"AL","sub":"Ice Cream"},{"id":"p183","name":"Yogurt — Coconut 500g","info":"CO/WW/AL","sub":"Yoghurt"},{"id":"p182","name":"Yogurt — Greek","sub":"Yoghurt"}]},{"id":"a2","name":"Food Groceries","products":[{"id":"p52","name":"Cacao Raw Nibs — Organic","info":"TH","sub":"Baking"},{"id":"p67","name":"Cream of Tartar","info":"CO/WW","sub":"Baking"},{"id":"p129","name":"Noshu Sugar Free Choc Baking Chips","sub":"Baking"},{"id":"p128","name":"Noshu Sugar Free White Choc Baking Chips","sub":"Baking"},{"id":"p122","name":"Vanilla Bean","info":"CO/WW","sub":"Baking"},{"id":"p46","name":"Bone Broth Body Glue Natural — Jars","info":"WL","sub":"Bone Broth"},{"id":"p48","name":"Bone Broth Body Glue Natural — Squeeze Tub","info":"WL","sub":"Bone Broth"},{"id":"p49","name":"Bone Broth Body Glue Squeeze Tub","info":"WL","sub":"Bone Broth"},{"id":"p50","name":"Bone Broth Chocolate — Jars","info":"WL","sub":"Bone Broth"},{"id":"p51","name":"Bone Broth Sauce — Jars","info":"WL","sub":"Bone Broth"},{"id":"p53","name":"Coconut Cream — Small Pack","info":"CO","sub":"Coconut"},{"id":"p54","name":"Coconut Desiccated","info":"CO/WW","sub":"Coconut"},{"id":"p55","name":"Coconut Flakes — Organic","info":"CO/WW","sub":"Coconut"},{"id":"p56","name":"Coconut Flour","info":"CO/WW","sub":"Coconut"},{"id":"p57","name":"Coconut Milk — Can","info":"CO/WW","sub":"Coconut"},{"id":"p58","name":"Coconut Shredded","info":"CO/WW","sub":"Coconut"},{"id":"p125","name":"Pure Coconut Cream","info":"CO/WW","sub":"Coconut"},{"id":"p61","name":"Crackers — Olina’s Seed Crackers","info":"CO/WW","sub":"Crackers & Wraps"},{"id":"p62","name":"Crackers — Peckish — BBQ","info":"CO","sub":"Crackers & Wraps"},{"id":"p63","name":"Crackers — Peckish — Cheddar Cheese","info":"CO","sub":"Crackers & Wraps"},{"id":"p64","name":"Crackers — Peckish — Original","info":"CO","sub":"Crackers & Wraps"},{"id":"p65","name":"Crackers — Peckish — Seaweed","info":"CO","sub":"Crackers & Wraps"},{"id":"p66","name":"Crackers — Peckish — Sour Cream and Chives","info":"CO","sub":"Crackers & Wraps"},{"id":"p130","name":"Noshu Low Carb Bars Cherry","info":"WW","sub":"Crackers & Wraps"},{"id":"p124","name":"Wraps — Lower Carb","info":"AL","sub":"Crackers & Wraps"},{"id":"p68","name":"Cucumber — Dill Pickles","info":"CO/WW","sub":"Dips & Pickles"},{"id":"p70","name":"Dip — Crispy Bacon & Onion","info":"CO/WW","sub":"Dips & Pickles"},{"id":"p69","name":"Dip — Dill Pickle","info":"CO/WW","sub":"Dips & Pickles"},{"id":"p73","name":"Jalapeños Sliced","info":"CO/WW/AL","sub":"Dips & Pickles"},{"id":"p132","name":"Pickled Onion — Three&Three Old Style","sub":"Dips & Pickles"},{"id":"p126","name":"Wicked-Blissfull Beet & Apple Saverkraut","info":"CO","sub":"Dips & Pickles"},{"id":"p127","name":"Wicked-Sinfully Sublime Saverkraut","info":"CO","sub":"Dips & Pickles"},{"id":"p39","name":"Berries Fresh — Basil","sub":"Fruit"},{"id":"p38","name":"Berries Fresh — Blueberry","sub":"Fruit"},{"id":"p40","name":"Berries Fresh — Strawberry","sub":"Fruit"},{"id":"p74","name":"Mung Beans — Whole","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p75","name":"Nuts — Macadamia","info":"CO","sub":"Nuts & Seeds"},{"id":"p76","name":"Nuts — Pecan","info":"CO","sub":"Nuts & Seeds"},{"id":"p77","name":"Nuts — Pine","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p101","name":"Seeds — Cardamon Green","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p102","name":"Seeds — Chai Black","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p103","name":"Seeds — Chai White","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p104","name":"Seeds — Coriander","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p105","name":"Seeds — Hemp","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p107","name":"Seeds — Mustard","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p106","name":"Seeds — Pumpkin","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p109","name":"Seeds — Sesame Seeds — Black","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p108","name":"Seeds — Sesame Seeds — White","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p110","name":"Seeds — Sunflower Seeds","sub":"Nuts & Seeds"},{"id":"p71","name":"Deli Original Green Olives","info":"CO/WW","sub":"Olives"},{"id":"p80","name":"Olives — Black Slice","info":"CO/WW/AL","sub":"Olives"},{"id":"p79","name":"Olives — Green Pitted","info":"CO/WW","sub":"Olives"},{"id":"p81","name":"Olives — Mixed","info":"AL","sub":"Olives"},{"id":"p36","name":"Beef Tallow Grass Fed","info":"BN","sub":"Other"},{"id":"p83","name":"Pasta Fettuccine — Slendier","info":"CO/WW","sub":"Pasta"},{"id":"p82","name":"Pasta Spagetti — Slendier","info":"CO/WW","sub":"Pasta"},{"id":"p35","name":"Almond Flour","sub":"Powders & Flours"},{"id":"p47","name":"Australian-Almond Flour","sub":"Powders & Flours"},{"id":"p84","name":"Powder — Arrowroot Powder","info":"CO/WW","sub":"Powders & Flours"},{"id":"p85","name":"Powder — Baking Powder","info":"CO/WW","sub":"Powders & Flours"},{"id":"p86","name":"Powder — Buckwheat Flour — Organic","info":"CO/WW","sub":"Powders & Flours"},{"id":"p87","name":"Powder — Cacao","info":"CO/WW","sub":"Powders & Flours"},{"id":"p88","name":"Powder — Egg Whites","info":"CO/WW","sub":"Powders & Flours"},{"id":"p89","name":"Powder — Flax Seed Meal","info":"CO/WW","sub":"Powders & Flours"},{"id":"p90","name":"Powder — Gelatine","info":"CO/WW","sub":"Powders & Flours"},{"id":"p91","name":"Powder — Ginger","info":"CO/WW","sub":"Powders & Flours"},{"id":"p92","name":"Powder — Hemp","sub":"Powders & Flours"},{"id":"p93","name":"Powder — Linseed Meal","info":"CO/WW","sub":"Powders & Flours"},{"id":"p94","name":"Powder — Pea Protein","info":"CO/WW/CW","sub":"Powders & Flours"},{"id":"p95","name":"Powder — Psyllium Husk","info":"CO/WW","sub":"Powders & Flours"},{"id":"p96","name":"Powder — Tapioca","info":"WW","sub":"Powders & Flours"},{"id":"p97","name":"Powder — Whole Egg","info":"CO/WW","sub":"Powders & Flours"},{"id":"p98","name":"Powder — Xanthan Gum","info":"CO/WW/AL","sub":"Powders & Flours"},{"id":"p78","name":"Psyllium Husk","info":"CO/WW/AL","sub":"Powders & Flours"},{"id":"p34","name":"Almond Butter","info":"CO/WW","sub":"Spreads"},{"id":"p72","name":"Honey 100% Raw","info":"CO/WW","sub":"Spreads"},{"id":"p100","name":"Peanut Butter — Crunchy — Can — Tinned","info":"AL","sub":"Spreads"},{"id":"p99","name":"Peanut Butter — Organic","info":"WL","sub":"Spreads"},{"id":"p123","name":"Vegemite","info":"CO/WW/AL","sub":"Spreads"},{"id":"p33","name":"Anchovies","info":"CO/WW","sub":"Tinned Fish"},{"id":"p120","name":"Tinned — Salmon Pink","info":"CO/WW/AL","sub":"Tinned Fish"},{"id":"p121","name":"Tinned — Sardines [Pet]","info":"CO/WW/AL","sub":"Tinned Fish"},{"id":"p115","name":"Tinned Tuna — Chunks","info":"AL","sub":"Tinned Fish"},{"id":"p116","name":"Tinned Tuna — Mango Chili","info":"AL","sub":"Tinned Fish"},{"id":"p118","name":"Tinned Tuna — Seeded Mustard","info":"AL","sub":"Tinned Fish"},{"id":"p117","name":"Tinned Tuna — Sweet Chilli and Onion","info":"AL","sub":"Tinned Fish"},{"id":"p119","name":"Tinned Tuna — Tangy Jalapeños","info":"AL","sub":"Tinned Fish"},{"id":"p111","name":"Tomato — Crushed","info":"CO/WW","sub":"Tomato"},{"id":"p112","name":"Tomato — Paste","info":"CO/WW","sub":"Tomato"},{"id":"p114","name":"Tomato — Sun Dried Strips","info":"CO/WW/AL","sub":"Tomato"},{"id":"p113","name":"Tomato Paste Sachets","info":"CO/WW","sub":"Tomato"}]},{"id":"frz","name":"Frozen Food","products":[{"id":"p43","name":"Berries Frozen — Blueberry","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p42","name":"Berries Frozen — Pineapple","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p44","name":"Berries Frozen — Strawberry","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p45","name":"Macro-Organic Raspberries","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p59","name":"Cauliflower Frozen","info":"CO/WW/AL","sub":"Vegetables"},{"id":"p60","name":"Cauliflower Rice","info":"CO/WW/AL","sub":"Vegetables"},{"id":"p131","name":"Frozen Spinach","sub":"Vegetables","info":"CO/WW/AL"},{"id":"p319","name":"Spinach — Raw Frozen","sub":"Vegetables","info":"CO/WW/AL"}]},{"id":"a1","name":"Fruit & Veg","products":[{"id":"p23","name":"Eggs","info":"FS","sub":"Eggs"},{"id":"p1","name":"Avocado","info":"FS","sub":"Fruit"},{"id":"p11","name":"Lemons","info":"FS","sub":"Fruit"},{"id":"p12","name":"Limes","info":"FS","sub":"Fruit"},{"id":"p28","name":"Chill","info":"FS/CO","sub":"Herbs & Chilli"},{"id":"p24","name":"Fresh Garlic","sub":"Herbs & Chilli"},{"id":"p27","name":"Jalapeño","sub":"Herbs & Chilli"},{"id":"p32","name":"Lime Leaves","sub":"Herbs & Chilli"},{"id":"p25","name":"Coleslaw","info":"CO","sub":"Salad"},{"id":"p8","name":"Cos Lettuce","sub":"Salad"},{"id":"p9","name":"Cucumber’s","info":"FS","sub":"Salad"},{"id":"p19","name":"Rocket Lettuce","info":"FS","sub":"Salad"},{"id":"p21","name":"Tomato’s","info":"FS","sub":"Salad"},{"id":"p31","name":"Beans","info":"FS/CO/AL","sub":"Vegetables"},{"id":"p3","name":"Broccoli","sub":"Vegetables"},{"id":"p2","name":"Broccolini","info":"FS/AL","sub":"Vegetables"},{"id":"p4","name":"Capsicum Green","info":"FS","sub":"Vegetables"},{"id":"p5","name":"Capsicums Red","info":"FS","sub":"Vegetables"},{"id":"p6","name":"Carrots","info":"FS","sub":"Vegetables"},{"id":"p7","name":"Cauliflower","info":"FS","sub":"Vegetables"},{"id":"p10","name":"Celery","sub":"Vegetables"},{"id":"p14","name":"Mushrooms — Sliced","info":"FS/AL","sub":"Vegetables"},{"id":"p15","name":"Mushrooms — Whole x large","info":"FS/AL","sub":"Vegetables"},{"id":"p17","name":"Onions — Brown","info":"FS","sub":"Vegetables"},{"id":"p16","name":"Onions — Red","info":"FS","sub":"Vegetables"},{"id":"p18","name":"Potato","info":"FS","sub":"Vegetables"},{"id":"p26","name":"Pumpkin 1/4","info":"FS","sub":"Vegetables"},{"id":"p30","name":"Spring onions","sub":"Vegetables"},{"id":"p20","name":"Sweat Potato","info":"FS","sub":"Vegetables"},{"id":"p22","name":"Zucchini","info":"FS","sub":"Vegetables"}]},{"id":"a16","name":"Health","products":[{"id":"p374","name":"Rose-Hip Vital Canine 500g","sub":"Pet"},{"id":"p373","name":"Creatine Powder — Vital Strength-100% Pure","sub":"Supplements"},{"id":"p375","name":"Schuessler-Tissue Salts","sub":"Supplements"}]},{"id":"a10","name":"Herbs & Spices","products":[{"id":"p316","name":"Baking Powder","sub":"Baking & Sweeteners"},{"id":"p315","name":"Coco Earth Almond Flour","sub":"Baking & Sweeteners"},{"id":"p317","name":"Monkfruit Erythritol White","sub":"Baking & Sweeteners"},{"id":"p318","name":"Monkfruit Eythritol Raw","sub":"Baking & Sweeteners"},{"id":"p277","name":"Bouquet Garni","info":"CO/WW","sub":"Blends"},{"id":"p279","name":"Cajun Spice Blend","info":"CO/WW/AL","sub":"Blends"},{"id":"p285","name":"Chinese Five Spice","info":"CO/WW","sub":"Blends"},{"id":"p289","name":"Curry — Mild Spicy","info":"CO/WW","sub":"Blends"},{"id":"p293","name":"Garam Masala","info":"CO/WW/AL","sub":"Blends"},{"id":"p295","name":"Italian Herbs","info":"CO/WW/AL","sub":"Blends"},{"id":"p296","name":"Keens Curry","info":"CO/WW","sub":"Blends"},{"id":"p297","name":"Mixed Herbs","info":"CO/WW/AL","sub":"Blends"},{"id":"p299","name":"Nashville Style Spice","info":"CO/WW","sub":"Blends"},{"id":"p305","name":"Pickling Powder","info":"CO/WW","sub":"Blends"},{"id":"p307","name":"Ras El Hanout","info":"CO/WW","sub":"Blends"},{"id":"p309","name":"Shichimi Togarashi","info":"CO/WW/AL","sub":"Blends"},{"id":"p314","name":"Za’atar Mix","info":"CO/WW","sub":"Blends"},{"id":"p304","name":"Oregano","info":"CO/WW/AL","sub":"Herbs"},{"id":"p308","name":"Sage Dried","info":"CO/WW","sub":"Herbs"},{"id":"p312","name":"Thyme Leaves","info":"CO/WW","sub":"Herbs"},{"id":"p278","name":"Candle Nuts","info":"CO/WW","sub":"Other"},{"id":"p280","name":"Cardamom Pods","info":"CO/WW","sub":"Seeds"},{"id":"p287","name":"Coriander Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p292","name":"Fennel Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p291","name":"Fenugreek Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p298","name":"Mustard Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p300","name":"Niggela Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p306","name":"Poppy Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p276","name":"All Spices","sub":"Spices"},{"id":"p281","name":"Cardamom Powder","info":"CO/WW/AL","sub":"Spices"},{"id":"p282","name":"Cayenne Pepper","info":"CO/WW","sub":"Spices"},{"id":"p284","name":"Chilli — Whole","info":"CO/WW","sub":"Spices"},{"id":"p283","name":"Chilli Powder","info":"CO/WW","sub":"Spices"},{"id":"p286","name":"Cloves","info":"CO/WW","sub":"Spices"},{"id":"p288","name":"Coriander Powder","info":"CO/WW","sub":"Spices"},{"id":"p290","name":"Cumin Powder","info":"CO/WW","sub":"Spices"},{"id":"p294","name":"Garlic Powder","info":"CO/WW/AL","sub":"Spices"},{"id":"p301","name":"Nutmeg Ground","info":"CO/WW","sub":"Spices"},{"id":"p302","name":"Nutmeg Whole Nuts","info":"CO/WW","sub":"Spices"},{"id":"p303","name":"Onion Powder","info":"CO/WW","sub":"Spices"},{"id":"p313","name":"Organic Tumeric","sub":"Spices"},{"id":"p310","name":"Star of Anise","info":"CO/WW/AL","sub":"Spices"},{"id":"p311","name":"Sumac — Sour Spice","info":"CO/WW/AL","sub":"Spices"}]},{"id":"a18","name":"Kitchen Cleaning","products":[{"id":"p388","name":"Bags — Garbage Bin 240 Ltr","info":"CO","sub":"Bags & Bins"},{"id":"p390","name":"Bags — Tubs","info":"CO","sub":"Bags & Bins"},{"id":"p389","name":"Garbage Kitchen","info":"AL","sub":"Bags & Bins"},{"id":"p386","name":"All Purpose Cleaner","info":"AL","sub":"Cleaners"},{"id":"p394","name":"Domestos","info":"AL","sub":"Cleaners"},{"id":"p395","name":"Easy Off Oven","info":"CO/WW/BU","sub":"Cleaners"},{"id":"p396","name":"Floor Cleaner","info":"CO/WW/AL/BU","sub":"Cleaners"},{"id":"p398","name":"Miracle Soap","info":"CO/WW","sub":"Cleaners"},{"id":"p401","name":"Toilet Cartridge — Ducks","info":"CO/WW","sub":"Cleaners"},{"id":"p404","name":"Window Cleaner","info":"AL/BU","sub":"Cleaners"},{"id":"p391","name":"Dishwashing Liquid","info":"AL","sub":"Dishwashing"},{"id":"p393","name":"Dishwashing Rinse Aid","info":"AL","sub":"Dishwashing"},{"id":"p392","name":"Dishwashing Tablets","info":"AL","sub":"Dishwashing"},{"id":"p387","name":"Clothes Washing Powder","info":"AL","sub":"Laundry"},{"id":"p402","name":"Vanish Oxi Action Granules","info":"CO/WW","sub":"Laundry"},{"id":"p397","name":"Micro Clothes","info":"AB","sub":"Pads & Cloths"},{"id":"p405","name":"Replacement Scouters-Wand","info":"CO","sub":"Pads & Cloths"},{"id":"p399","name":"Scrubbing Pads — Cause","info":"CO/WW","sub":"Pads & Cloths"},{"id":"p400","name":"Scrubbing Pads — Fine","info":"CO/WW","sub":"Pads & Cloths"},{"id":"p403","name":"Washing Pads","sub":"Pads & Cloths"}]},{"id":"a17","name":"Kitchen Food","products":[{"id":"p376","name":"Baking Paper","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p377","name":"Glad Wrap","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p378","name":"Hand Towels","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p379","name":"Napkins","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p380","name":"Tissues","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p381","name":"Snap Seal — 15 x 9","info":"CO","sub":"Storage Bags"},{"id":"p382","name":"Snap Seal — 18 x17","info":"CO","sub":"Storage Bags"},{"id":"p383","name":"Snap Seal — 22 x 22.5","info":"CO","sub":"Storage Bags"},{"id":"p384","name":"Snap Seal — 22 x 25","info":"CO","sub":"Storage Bags"},{"id":"p385","name":"Snap Seal — 27 x 33","info":"CO","sub":"Storage Bags"}]},{"id":"a19","name":"Laundry Cleaning","products":[{"id":"p406","name":"All Purpose Cleaner","sub":"Cleaners"},{"id":"p407","name":"Dishwashing Liquid — Sml","info":"CO/WW","sub":"Cleaners"},{"id":"p409","name":"Gumption","info":"CO/WW/BU","sub":"Cleaners"},{"id":"p414","name":"Toilet Cartridge — Ducks","info":"CO/WW","sub":"Cleaners"},{"id":"p410","name":"Handwashing Lotion — Foaming","info":"CO/WW/CW","sub":"Handwashing"},{"id":"p412","name":"Sards Soap","info":"CO/WW/CW","sub":"Laundry"},{"id":"p411","name":"Sards Stick","info":"CO/WW/BU","sub":"Laundry"},{"id":"p413","name":"Stain Remover — Exit Blocks","info":"CO/WW","sub":"Laundry"},{"id":"p415","name":"Washing Powder","info":"AL","sub":"Laundry"},{"id":"p408","name":"Fire Starters","sub":"Other"}]},{"id":"a22","name":"Medical Products","products":[{"id":"p433","name":"Band Aids","info":"CO","sub":"First Aid"},{"id":"p434","name":"Milton-30 Anti-Bacterial Tablets","sub":"First Aid"},{"id":"p430","name":"(FR) Paracetamol (Hedanol)","info":"AL","sub":"Medication"},{"id":"p432","name":"Sukin Natural Deodorant","sub":"Personal Care"},{"id":"p429","name":"60+ Years Probiotic — Life Space","info":"CO/WW/CW","sub":"Supplements"},{"id":"p428","name":"Hydralyte Tabs — Black Current","info":"CO/WW/CW","sub":"Supplements"},{"id":"p431","name":"Wild Fish Oil — High Strength — Swisse","info":"CO/CW","sub":"Supplements"}]},{"id":"a15","name":"Oils","products":[{"id":"p357","name":"4Ltr Virgin Olive Oil","info":"CO/WW/AL","sub":"Cooking Oils"},{"id":"p358","name":"Avocado Oil","info":"CO/WW","sub":"Cooking Oils"},{"id":"p353","name":"Caster Oil","info":"CO/WW/CW","sub":"Cooking Oils"},{"id":"p354","name":"Coconut Oil","info":"CO/WW","sub":"Cooking Oils"},{"id":"p355","name":"Coconut Oil Spray","info":"CO/WW","sub":"Cooking Oils"},{"id":"p363","name":"Oh So Natural — Organic Extra Virgin Olive Oil","sub":"Cooking Oils"},{"id":"p356","name":"Sesame Oil — Pure","info":"CO/WW","sub":"Cooking Oils"},{"id":"p360","name":"Essential Oils — Lavender","sub":"Essential Oils"},{"id":"p361","name":"Essential Oils — Oregano","sub":"Essential Oils"},{"id":"p359","name":"Essential Oils — Peppermint","sub":"Essential Oils"},{"id":"p362","name":"Essential Oils — Wild Orange","sub":"Essential Oils"},{"id":"p372","name":"Nirvana Organics Liquid Stevia — Butterscotch","sub":"Sweeteners"},{"id":"p371","name":"Nirvana Organics Liquid Stevia — Caramel","sub":"Sweeteners"},{"id":"p364","name":"Apple Cider Vinegar — Organic","info":"CO","sub":"Vinegar"},{"id":"p367","name":"Balsamic Vinegar Of Modena","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p369","name":"Malt Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p365","name":"Red Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p368","name":"Rice Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p370","name":"White Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p366","name":"White Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar"}]},{"id":"a12","name":"Pellets","products":[{"id":"p335","name":"Fruit Wood with Charcoal.","info":"SB","sub":"Smoking Pellets"},{"id":"p336","name":"Texas Bland with Charcoal","info":"SB","sub":"Smoking Pellets"}]},{"id":"a20","name":"Pet Gear","products":[{"id":"p417","name":"Deremcare — Malaise Mala — Medicated Shampoo","sub":"Grooming"},{"id":"p419","name":"Shampoo and Conditioner Combined","sub":"Grooming"},{"id":"p416","name":"Chews","info":"AL","sub":"Treats"},{"id":"p418","name":"Poo Bags","info":"CO","sub":"Waste"}]},{"id":"a11","name":"Rubs","products":[{"id":"p320","name":"Bagel Spicy Edition","sub":"BBQ Rubs"},{"id":"p321","name":"Bourbon BBQ","sub":"BBQ Rubs"},{"id":"p322","name":"Braai Smoky BBQ","sub":"BBQ Rubs"},{"id":"p326","name":"Charcoal","sub":"BBQ Rubs"},{"id":"p325","name":"Charcoal Chicken Shop","sub":"BBQ Rubs"},{"id":"p323","name":"Dalmatian Brisket","sub":"BBQ Rubs"},{"id":"p327","name":"Gourmet BBQ","sub":"BBQ Rubs"},{"id":"p328","name":"Gunpowder Smokey","sub":"BBQ Rubs"},{"id":"p329","name":"Korean BBQ","sub":"BBQ Rubs"},{"id":"p334","name":"The White Rub","sub":"BBQ Rubs"},{"id":"p331","name":"Smoked Sea salt For Lamb","sub":"Salts"},{"id":"p330","name":"Smokey Chilli Lime Salt","sub":"Salts"},{"id":"p324","name":"Burger Sauce Seasoning","sub":"Seasonings"},{"id":"p332","name":"Souvlaki Seasoning","sub":"Seasonings"},{"id":"p333","name":"Sweet N Smokey Cajon","sub":"Seasonings"}]},{"id":"a7","name":"Sauces","products":[{"id":"p213","name":"Kikkomen-Tamari Soy Sauce","sub":"Asian"},{"id":"p217","name":"Chilli Oil","sub":"Hot & Spicy"},{"id":"p211","name":"Red Hot Wings","info":"CO/WW","sub":"Hot & Spicy"},{"id":"p216","name":"Siracha Mayo Sauce","sub":"Hot & Spicy"},{"id":"p215","name":"Sweet Chilli Sauce","sub":"Hot & Spicy"},{"id":"p212","name":"Tabasco Sauce","info":"CO/WW","sub":"Hot & Spicy"},{"id":"p210","name":"Mustard — French’s Classic Yellow Mustard","sub":"Mustard"},{"id":"p218","name":"Mingle-Sauce-BBQ","info":"WW3","sub":"Table Sauces"},{"id":"p220","name":"Mingle-Sauce-Sweet Chilli","info":"WW3","sub":"Table Sauces"},{"id":"p219","name":"Mingle-Sauce-Tomato","info":"WW3","sub":"Table Sauces"},{"id":"p214","name":"Worcestershire Sauce","info":"CO/WW","sub":"Table Sauces"}]},{"id":"a14","name":"Seasonings","products":[{"id":"p348","name":"Salt — Celtic — Fine","info":"IS","sub":"Salt & Pepper"},{"id":"p349","name":"White Ground Pepper","info":"CO/WW/AL","sub":"Salt & Pepper"},{"id":"p350","name":"Massel Stock Cubes — Beef","info":"CO/WW","sub":"Stock Cubes"},{"id":"p351","name":"Stock Cubes — Chicken","info":"CO/WW","sub":"Stock Cubes"},{"id":"p352","name":"Stock Cubes — Vegetable","info":"CO/WW","sub":"Stock Cubes"}]},{"id":"a6","name":"Snacks & Treats","products":[{"id":"p207","name":"Pork Crackles","info":"CO","sub":"Savoury"},{"id":"p209","name":"Double D — Butter Candy","sub":"Sweets & Chocolate"},{"id":"p208","name":"Double D — Fruit Jellies","sub":"Sweets & Chocolate"},{"id":"p205","name":"NS — Dark Chocolate","info":"WW","sub":"Sweets & Chocolate"},{"id":"p206","name":"NS-Fruit & Nut","info":"WW","sub":"Sweets & Chocolate"}]},{"id":"a13","name":"Sweetener Substitutes","products":[{"id":"p346","name":"Choc Baking Chips — Noshu","info":"CO/WW","sub":"Baking Chips"},{"id":"p347","name":"Choc White Baking Chips — Noshu","info":"CO/WW","sub":"Baking Chips"},{"id":"p345","name":"Monkfruit — Baking Blend","info":"CO/WW/CW","sub":"Monkfruit"},{"id":"p344","name":"Monkfruit — Icing Powder","info":"CO/WW","sub":"Monkfruit"},{"id":"p343","name":"Monkfruit — Raw","info":"CO/WW","sub":"Monkfruit"},{"id":"p342","name":"Monkfruit — White","info":"CO/WW","sub":"Monkfruit"},{"id":"p337","name":"Stevia Liquid — Butterscotch","info":"CO/WW/CW","sub":"Stevia"},{"id":"p338","name":"Stevia Liquid — Caramel","info":"CO/WW","sub":"Stevia"},{"id":"p339","name":"Stevia Liquid — Original","info":"CO/WW/CW","sub":"Stevia"},{"id":"p340","name":"Stevia Liquid — Vanilla","info":"CO/WW/CW","sub":"Stevia"},{"id":"p341","name":"Vanilla Extract — Concentrated","info":"CO/WW/AL","sub":"Vanilla"}]}]};
+const DATA = {"stores":[{"code":"AB","name":"Auto Barn"},{"code":"AL","name":"Aldi"},{"code":"AL1","name":"Tweed Heads","sub":true},{"code":"AL2","name":"Tweed Heads South","sub":true},{"code":"BG","name":"Butcher Gold Coast"},{"code":"BN","name":"Butcher North Coast"},{"code":"BO","name":"Butcher Online"},{"code":"BU","name":"Bunnings"},{"code":"CM","name":"Coolangatta Markets"},{"code":"CO","name":"Coles"},{"code":"CO1","name":"Tweed Heads","sub":true},{"code":"CO2","name":"Tweed Heads South","sub":true},{"code":"CO3","name":"Banora","sub":true},{"code":"CS","name":"Cheap Shop"},{"code":"CW","name":"Chemist W’house"},{"code":"DD","name":"Double D Online"},{"code":"DM","name":"Dan Murphy"},{"code":"FS","name":"Fruit Shop"},{"code":"HP","name":"Health Products Online"},{"code":"K4","name":"Kings 4x4"},{"code":"KC","name":"Kirra Cafe"},{"code":"SB","name":"Smoked BBQ Co"},{"code":"SE","name":"Salt Of The Earth"},{"code":"WL","name":"Whole Life Health"},{"code":"WW","name":"Woolworths"},{"code":"WW1","name":"Tweed Heads","sub":true},{"code":"WW2","name":"Tweed Heads South","sub":true},{"code":"WW3","name":"Banora","sub":true}],"aisles":[{"id":"a23","name":"Alcohol","products":[{"id":"p435","name":"Better Beer — 0C/0S","info":"DM","sub":"Beer"},{"id":"p438","name":"Coopers Dry — Low Carb","info":"DM","qty":"x 6 pack","sub":"Beer"},{"id":"p437","name":"Ciroc Vodka — 1lt","info":"DM","sub":"Spirits"},{"id":"p436","name":"Ciroc Vodka — 700m","info":"DM","sub":"Spirits"},{"id":"p439","name":"Wine White — Bone","info":"DM","qty":"x 2","sub":"Wine"}]},{"id":"a21","name":"Bathroom Products","products":[{"id":"p427","name":"Eco Floss Picks","sub":"Dental"},{"id":"p426","name":"Toothpaste","sub":"Dental"},{"id":"p424","name":"Toilet Paper (4 Ply)","info":"CO/WW/AL","sub":"Paper"},{"id":"p425","name":"Deodorant Rexona","info":"CO","sub":"Personal Care"},{"id":"p420","name":"Handwashing Lotion — Foaming","info":"CO/WW","sub":"Personal Care"},{"id":"p421","name":"Razors — Disposable","info":"AL","sub":"Shaving"},{"id":"p422","name":"Razors — Packet","info":"AL","sub":"Shaving"},{"id":"p423","name":"Shaving Cream — Sensitive Skin","info":"AL","sub":"Shaving"}]},{"id":"a5","name":"Beverages","products":[{"id":"p186","name":"Coffee Bag — Organic","info":"IS","sub":"Coffee"},{"id":"p187","name":"Coffee Pods — 11","info":"AL","sub":"Coffee"},{"id":"p188","name":"Coffee Pods — 12","info":"AL","sub":"Coffee"},{"id":"p189","name":"Hazelnut Latte","info":"AL/CO","sub":"Coffee"},{"id":"p185","name":"Kirra-Coffee-beans","sub":"Coffee"},{"id":"p196","name":"SD-Ginger Beer With lime","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p195","name":"SD-SF — Blood Orange","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p191","name":"SD-SF — Lemon","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p194","name":"SD-SF — Passionfruit","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p192","name":"SD-SF — Pineapple","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p197","name":"SD-SF — Tonic Water","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p193","name":"SD-SF — Watermelon","info":"CO","sub":"Soft Drink & Soda Stream"},{"id":"p190","name":"Soda Stream Gas Refill","info":"CO/WW","sub":"Soft Drink & Soda Stream"},{"id":"p184","name":"Chai Spice","info":"CO/WW","sub":"Tea"},{"id":"p199","name":"Tea — Bengal Spice","info":"CO/WW","sub":"Tea"},{"id":"p200","name":"Tea — Black","info":"CO/WW","sub":"Tea"},{"id":"p201","name":"Tea — Bush Dreaming","sub":"Tea"},{"id":"p202","name":"Tea — Earl Grey","info":"CO/WW","sub":"Tea"},{"id":"p203","name":"Tea — Green Tea & Lemon","info":"CO/WW","sub":"Tea"},{"id":"p204","name":"Tea — Peppermint","info":"CO/WW","sub":"Tea"},{"id":"p198","name":"Schweppes natural mineral water","info":"CO/WW/AL","sub":"Water"}]},{"id":"a3","name":"Butcher","products":[{"id":"p134","name":"Beef Chuck Roast","info":"BN/BG","sub":"Beef"},{"id":"p135","name":"Beef Chuck Steak Pieces","info":"BN/BG","sub":"Beef"},{"id":"p137","name":"Beef Mince","info":"AL","sub":"Beef"},{"id":"p139","name":"Beef Stewing Pieces 1kg","info":"BN/BG","sub":"Beef"},{"id":"p140","name":"Beef Tallow Grass","info":"BN","sub":"Beef"},{"id":"p147","name":"Corn Silverside","sub":"Beef"},{"id":"p148","name":"Cow’s Liver","sub":"Beef"},{"id":"p154","name":"Osso Buco","info":"BG","sub":"Beef"},{"id":"p141","name":"Chicken Breast","info":"AL","sub":"Chicken"},{"id":"p143","name":"Chicken Schnitzel","sub":"Chicken"},{"id":"p144","name":"Chicken Thighs","info":"AL","sub":"Chicken"},{"id":"p146","name":"Chicken Whole Split","info":"AL","sub":"Chicken"},{"id":"p145","name":"Chicken Wings","info":"AL","sub":"Chicken"},{"id":"p151","name":"Lamb Chops","sub":"Lamb"},{"id":"p152","name":"Lamb [Leg] Shoulder Boneless","info":"AL","sub":"Lamb"},{"id":"p149","name":"Lamb Mince","info":"CO/WW","sub":"Lamb"},{"id":"p153","name":"Lamb Ribs","sub":"Lamb"},{"id":"p136","name":"Beef Liver — Pet","info":"GB","sub":"Pet"},{"id":"p138","name":"Beef Mince — Pet","info":"WW/CO","sub":"Pet"},{"id":"p142","name":"Chicken Hearts — Pet","sub":"Pet"},{"id":"p150","name":"Lamb Mince — Pet","info":"WW/CC","sub":"Pet"},{"id":"p156","name":"Sausages — Pet","sub":"Pet"},{"id":"p133","name":"Bacon","info":"AL","sub":"Pork & Smallgoods"},{"id":"p161","name":"Ham","info":"AL","sub":"Pork & Smallgoods"},{"id":"p162","name":"Pepperoni","sub":"Pork & Smallgoods"},{"id":"p159","name":"Pork Loin roll","info":"AL","sub":"Pork & Smallgoods"},{"id":"p158","name":"Pork Mince","info":"CO/WW/AL","sub":"Pork & Smallgoods"},{"id":"p160","name":"Prosciutto","info":"AL","sub":"Pork & Smallgoods"},{"id":"p157","name":"Sausage — Thin","info":"BN/BG","sub":"Sausages"},{"id":"p155","name":"Sausages — Fat","info":"BN/BG","sub":"Sausages"}]},{"id":"a9","name":"Condiment Flavours","products":[{"id":"p237","name":"Char Siu Sauce","info":"CO/WW","sub":"Asian Sauces"},{"id":"p242","name":"Chinese Cooking Wine","info":"CO/WW","sub":"Asian Sauces"},{"id":"p249","name":"Fish Sauce","info":"CO/WW","sub":"Asian Sauces"},{"id":"p254","name":"Hoisin Sauce","info":"CO/WW","sub":"Asian Sauces"},{"id":"p259","name":"Mirin Seasoning","info":"CO/WW","sub":"Asian Sauces"},{"id":"p261","name":"Oyster Sauce","info":"CO/WW/AL","sub":"Asian Sauces"},{"id":"p271","name":"Tamarind Puree","info":"CO/WW/AL","sub":"Asian Sauces"},{"id":"p231","name":"Baby Capers","info":"CO/WW","sub":"Other"},{"id":"p275","name":"Pampas Puff Pastry","sub":"Other"},{"id":"p232","name":"Basil Paste — Gourmet","info":"CO/WW","sub":"Pastes"},{"id":"p238","name":"Chilli Paste — Gourmet G","info":"CO/WW","sub":"Pastes"},{"id":"p247","name":"Curry Paste Green — Valcom","info":"CO/WW","sub":"Pastes"},{"id":"p248","name":"Curry Paste Red — Valcom","info":"CO/WW","sub":"Pastes"},{"id":"p250","name":"Garlic Mince","info":"CO/WW","sub":"Pastes"},{"id":"p252","name":"Ginger — Organic Crushed","info":"CO/WW","sub":"Pastes"},{"id":"p251","name":"Ginger Paste — Gourmet G","info":"CO/WW","sub":"Pastes"},{"id":"p257","name":"Gourmet Garden Ginger","sub":"Pastes"},{"id":"p256","name":"Lemon Grass — Gourmet G","info":"CO/WW/AL","sub":"Pastes"},{"id":"p234","name":"Black pepper","info":"CO/WW/AL","sub":"Pepper"},{"id":"p236","name":"Black Peppercorns-Grinder","info":"CO/WW/AL","sub":"Pepper"},{"id":"p235","name":"Ground White Pepper","info":"CO/WW/AL","sub":"Pepper"},{"id":"p233","name":"Bay Leaves — Dried","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p239","name":"Chilli Powder — Kashmiri Mirch","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p240","name":"Chilli Powder — Madras","sub":"Spices & Herbs"},{"id":"p241","name":"Chilli Powder — Simply Org","info":"OL","sub":"Spices & Herbs"},{"id":"p243","name":"Cinnamon — Cylon Organic","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p245","name":"Cinnamon & Sugar Mix","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p244","name":"Cinnamon Sticks","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p246","name":"Coconut Amino Seasoning","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p253","name":"Herbs — De Provence","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p260","name":"Mustard Powder","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p263","name":"Paprika — Smoked","info":"CO/WW","sub":"Spices & Herbs"},{"id":"p262","name":"Paprika — Sweet","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p264","name":"Pickling Spice","info":"CO/WW/AL","sub":"Spices & Herbs"},{"id":"p268","name":"Cubes Beef — Massell","info":"CO/WW","sub":"Stock & Bases"},{"id":"p269","name":"Cubes Chicken — Massell","info":"CO/WW","sub":"Stock & Bases"},{"id":"p270","name":"Cubes Vegetable — Massell","info":"CO/WW","sub":"Stock & Bases"},{"id":"p265","name":"Real Gourmet — Vegeta","info":"CO/WW","sub":"Stock & Bases"},{"id":"p274","name":"Romano-Italian Tomato Paste-Organic","sub":"Tomato"},{"id":"p273","name":"Tomato Paste — Logo’s","info":"CO/WW/AL","sub":"Tomato"},{"id":"p272","name":"Tomatoes Sun Dried","info":"CO/WW/AL","sub":"Tomato"},{"id":"p255","name":"Italian Glaze","info":"CO/WW","sub":"Vinegar & Glaze"},{"id":"p266","name":"Rice Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar & Glaze"},{"id":"p258","name":"Mint Water","info":"WW","sub":"Waters & Essences"},{"id":"p267","name":"Rose Water","info":"CO/WW/CW","sub":"Waters & Essences"}]},{"id":"a8","name":"Condiments","products":[{"id":"p223","name":"Mustard — Dijon","info":"CO/WW","sub":"Mustard"},{"id":"p224","name":"Mustard — French","info":"CO/WW","sub":"Mustard"},{"id":"p225","name":"Mustard — Hot English","info":"CO/WW","sub":"Mustard"},{"id":"p221","name":"Gravy — Gravox Supreme","info":"CO/WW","sub":"Other"},{"id":"p222","name":"Mayo Whole Egg","info":"CO","sub":"Other"},{"id":"p230","name":"Smoked Garlic Chilli Sauce — Old Bones Chill Co","sub":"Other"},{"id":"p229","name":"Tahini Sauce","info":"CO/WW","sub":"Other"},{"id":"p226","name":"Soy — Super Light","info":"CO/WW","sub":"Soy"},{"id":"p227","name":"Soy — Superior Dark","info":"CO/WW","sub":"Soy"},{"id":"p228","name":"Soy — Tamari","info":"CO/WW","sub":"Soy"}]},{"id":"a4","name":"Dairy","products":[{"id":"p163","name":"Butter — Kerry Gold","info":"WW","sub":"Butter"},{"id":"p164","name":"Butter — WestGold Grass Fed — Salted","info":"CO/WW","sub":"Butter"},{"id":"p166","name":"Cheese — Brie — Triple Cream","info":"AL","sub":"Cheese"},{"id":"p168","name":"Cheese — Cottage","info":"CO/WW/AL","sub":"Cheese"},{"id":"p169","name":"Cheese — Cracker Barrel","info":"CO/WW","sub":"Cheese"},{"id":"p167","name":"Cheese — Cream Cheese","info":"AL/CO/WW","sub":"Cheese"},{"id":"p171","name":"Cheese — Extra Tasty Cheddar — Marsh","info":"WW","sub":"Cheese"},{"id":"p170","name":"Cheese — Feta Dodin Ii- Block","info":"CO/WW","sub":"Cheese"},{"id":"p172","name":"Cheese — Hallomi — Block","info":"CO/WW/AL","sub":"Cheese"},{"id":"p173","name":"Cheese — Maasdam — Sheets","info":"AL","sub":"Cheese"},{"id":"p174","name":"Cheese — Mozzarella — Grated","info":"AL","sub":"Cheese"},{"id":"p175","name":"Cheese — Parmesan — Grated","info":"AL","sub":"Cheese"},{"id":"p176","name":"Cheese — Smooth Blue","info":"AL","sub":"Cheese"},{"id":"p177","name":"Cheese — Tasty — Grated","sub":"Cheese"},{"id":"p165","name":"Mersey Valley-Pickled Onion","sub":"Cheese"},{"id":"p178","name":"Cream — Sour","info":"CO/WW/AL","sub":"Cream"},{"id":"p179","name":"Cream — Thickened","info":"CO/WW/AL","sub":"Cream"},{"id":"p180","name":"Ice Cream — No Added Sugar — Chocolate","info":"AL","sub":"Ice Cream"},{"id":"p181","name":"Ice Cream — No Added Sugar — Vanilla","info":"AL","sub":"Ice Cream"},{"id":"p183","name":"Yogurt — Coconut 500g","info":"CO/WW/AL","sub":"Yoghurt"},{"id":"p182","name":"Yogurt — Greek","sub":"Yoghurt"}]},{"id":"a2","name":"Food Groceries","products":[{"id":"p52","name":"Cacao Raw Nibs — Organic","info":"TH","sub":"Baking"},{"id":"p67","name":"Cream of Tartar","info":"CO/WW","sub":"Baking"},{"id":"p129","name":"Noshu Sugar Free Choc Baking Chips","sub":"Baking"},{"id":"p128","name":"Noshu Sugar Free White Choc Baking Chips","sub":"Baking"},{"id":"p122","name":"Vanilla Bean","info":"CO/WW","sub":"Baking"},{"id":"p46","name":"Bone Broth Body Glue Natural — Jars","info":"WL","sub":"Bone Broth"},{"id":"p48","name":"Bone Broth Body Glue Natural — Squeeze Tub","info":"WL","sub":"Bone Broth"},{"id":"p49","name":"Bone Broth Body Glue Squeeze Tub","info":"WL","sub":"Bone Broth"},{"id":"p50","name":"Bone Broth Chocolate — Jars","info":"WL","sub":"Bone Broth"},{"id":"p51","name":"Bone Broth Sauce — Jars","info":"WL","sub":"Bone Broth"},{"id":"p53","name":"Coconut Cream — Small Pack","info":"CO","sub":"Coconut"},{"id":"p54","name":"Coconut Desiccated","info":"CO/WW","sub":"Coconut"},{"id":"p55","name":"Coconut Flakes — Organic","info":"CO/WW","sub":"Coconut"},{"id":"p56","name":"Coconut Flour","info":"CO/WW","sub":"Coconut"},{"id":"p57","name":"Coconut Milk — Can","info":"CO/WW","sub":"Coconut"},{"id":"p58","name":"Coconut Shredded","info":"CO/WW","sub":"Coconut"},{"id":"p125","name":"Pure Coconut Cream","info":"CO/WW","sub":"Coconut"},{"id":"p61","name":"Crackers — Olina’s Seed Crackers","info":"CO/WW","sub":"Crackers & Wraps"},{"id":"p62","name":"Crackers — Peckish — BBQ","info":"CO","sub":"Crackers & Wraps"},{"id":"p63","name":"Crackers — Peckish — Cheddar Cheese","info":"CO","sub":"Crackers & Wraps"},{"id":"p64","name":"Crackers — Peckish — Original","info":"CO","sub":"Crackers & Wraps"},{"id":"p65","name":"Crackers — Peckish — Seaweed","info":"CO","sub":"Crackers & Wraps"},{"id":"p66","name":"Crackers — Peckish — Sour Cream and Chives","info":"CO","sub":"Crackers & Wraps"},{"id":"p130","name":"Noshu Low Carb Bars Cherry","info":"WW","sub":"Crackers & Wraps"},{"id":"p124","name":"Wraps — Lower Carb","info":"AL","sub":"Crackers & Wraps"},{"id":"p68","name":"Cucumber — Dill Pickles","info":"CO/WW","sub":"Dips & Pickles"},{"id":"p70","name":"Dip — Crispy Bacon & Onion","info":"CO/WW","sub":"Dips & Pickles"},{"id":"p69","name":"Dip — Dill Pickle","info":"CO/WW","sub":"Dips & Pickles"},{"id":"p73","name":"Jalapeños Sliced","info":"CO/WW/AL","sub":"Dips & Pickles"},{"id":"p132","name":"Pickled Onion — Three&Three Old Style","sub":"Dips & Pickles"},{"id":"p126","name":"Wicked-Blissfull Beet & Apple Saverkraut","info":"CO","sub":"Dips & Pickles"},{"id":"p127","name":"Wicked-Sinfully Sublime Saverkraut","info":"CO","sub":"Dips & Pickles"},{"id":"p39","name":"Berries Fresh — Basil","sub":"Fruit"},{"id":"p38","name":"Berries Fresh — Blueberry","sub":"Fruit"},{"id":"p40","name":"Berries Fresh — Strawberry","sub":"Fruit"},{"id":"p74","name":"Mung Beans — Whole","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p75","name":"Nuts — Macadamia","info":"CO","sub":"Nuts & Seeds"},{"id":"p76","name":"Nuts — Pecan","info":"CO","sub":"Nuts & Seeds"},{"id":"p77","name":"Nuts — Pine","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p101","name":"Seeds — Cardamon Green","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p102","name":"Seeds — Chai Black","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p103","name":"Seeds — Chai White","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p104","name":"Seeds — Coriander","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p105","name":"Seeds — Hemp","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p107","name":"Seeds — Mustard","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p106","name":"Seeds — Pumpkin","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p109","name":"Seeds — Sesame Seeds — Black","info":"CO/WW/AL","sub":"Nuts & Seeds"},{"id":"p108","name":"Seeds — Sesame Seeds — White","info":"CO/WW","sub":"Nuts & Seeds"},{"id":"p110","name":"Seeds — Sunflower Seeds","sub":"Nuts & Seeds"},{"id":"p71","name":"Deli Original Green Olives","info":"CO/WW","sub":"Olives"},{"id":"p80","name":"Olives — Black Slice","info":"CO/WW/AL","sub":"Olives"},{"id":"p79","name":"Olives — Green Pitted","info":"CO/WW","sub":"Olives"},{"id":"p81","name":"Olives — Mixed","info":"AL","sub":"Olives"},{"id":"p36","name":"Beef Tallow Grass Fed","info":"BN","sub":"Other"},{"id":"p83","name":"Pasta Fettuccine — Slendier","info":"CO/WW","sub":"Pasta"},{"id":"p82","name":"Pasta Spagetti — Slendier","info":"CO/WW","sub":"Pasta"},{"id":"p35","name":"Almond Flour","sub":"Powders & Flours"},{"id":"p47","name":"Australian-Almond Flour","sub":"Powders & Flours"},{"id":"p84","name":"Powder — Arrowroot Powder","info":"CO/WW","sub":"Powders & Flours"},{"id":"p85","name":"Powder — Baking Powder","info":"CO/WW","sub":"Powders & Flours"},{"id":"p86","name":"Powder — Buckwheat Flour — Organic","info":"CO/WW","sub":"Powders & Flours"},{"id":"p87","name":"Powder — Cacao","info":"CO/WW","sub":"Powders & Flours"},{"id":"p88","name":"Powder — Egg Whites","info":"CO/WW","sub":"Powders & Flours"},{"id":"p89","name":"Powder — Flax Seed Meal","info":"CO/WW","sub":"Powders & Flours"},{"id":"p90","name":"Powder — Gelatine","info":"CO/WW","sub":"Powders & Flours"},{"id":"p91","name":"Powder — Ginger","info":"CO/WW","sub":"Powders & Flours"},{"id":"p92","name":"Powder — Hemp","sub":"Powders & Flours"},{"id":"p93","name":"Powder — Linseed Meal","info":"CO/WW","sub":"Powders & Flours"},{"id":"p94","name":"Powder — Pea Protein","info":"CO/WW/CW","sub":"Powders & Flours"},{"id":"p95","name":"Powder — Psyllium Husk","info":"CO/WW","sub":"Powders & Flours"},{"id":"p96","name":"Powder — Tapioca","info":"WW","sub":"Powders & Flours"},{"id":"p97","name":"Powder — Whole Egg","info":"CO/WW","sub":"Powders & Flours"},{"id":"p98","name":"Powder — Xanthan Gum","info":"CO/WW/AL","sub":"Powders & Flours"},{"id":"p78","name":"Psyllium Husk","info":"CO/WW/AL","sub":"Powders & Flours"},{"id":"p34","name":"Almond Butter","info":"CO/WW","sub":"Spreads"},{"id":"p72","name":"Honey 100% Raw","info":"CO/WW","sub":"Spreads"},{"id":"p100","name":"Peanut Butter — Crunchy — Can — Tinned","info":"AL","sub":"Spreads"},{"id":"p99","name":"Peanut Butter — Organic","info":"WL","sub":"Spreads"},{"id":"p123","name":"Vegemite","info":"CO/WW/AL","sub":"Spreads"},{"id":"p33","name":"Anchovies","info":"CO/WW","sub":"Tinned Fish"},{"id":"p120","name":"Tinned — Salmon Pink","info":"CO/WW/AL","sub":"Tinned Fish"},{"id":"p121","name":"Tinned — Sardines [Pet]","info":"CO/WW/AL","sub":"Tinned Fish"},{"id":"p115","name":"Tinned Tuna — Chunks","info":"AL","sub":"Tinned Fish"},{"id":"p116","name":"Tinned Tuna — Mango Chili","info":"AL","sub":"Tinned Fish"},{"id":"p118","name":"Tinned Tuna — Seeded Mustard","info":"AL","sub":"Tinned Fish"},{"id":"p117","name":"Tinned Tuna — Sweet Chilli and Onion","info":"AL","sub":"Tinned Fish"},{"id":"p119","name":"Tinned Tuna — Tangy Jalapeños","info":"AL","sub":"Tinned Fish"},{"id":"p111","name":"Tomato — Crushed","info":"CO/WW","sub":"Tomato"},{"id":"p112","name":"Tomato — Paste","info":"CO/WW","sub":"Tomato"},{"id":"p114","name":"Tomato — Sun Dried Strips","info":"CO/WW/AL","sub":"Tomato"},{"id":"p113","name":"Tomato Paste Sachets","info":"CO/WW","sub":"Tomato"}]},{"id":"frz","name":"Frozen Food","products":[{"id":"p43","name":"Berries Frozen — Blueberry","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p42","name":"Berries Frozen — Pineapple","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p44","name":"Berries Frozen — Strawberry","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p45","name":"Macro-Organic Raspberries","sub":"Berries & Fruit","info":"CO/WW/AL"},{"id":"p59","name":"Cauliflower Frozen","info":"CO/WW/AL","sub":"Vegetables"},{"id":"p60","name":"Cauliflower Rice","info":"CO/WW/AL","sub":"Vegetables"},{"id":"p131","name":"Frozen Spinach","sub":"Vegetables","info":"CO/WW/AL"},{"id":"p319","name":"Spinach — Raw Frozen","sub":"Vegetables","info":"CO/WW/AL"}]},{"id":"a1","name":"Fruit & Veg","products":[{"id":"p23","name":"Eggs","info":"FS","sub":"Eggs"},{"id":"p1","name":"Avocado","info":"FS","sub":"Vegetables"},{"id":"p11","name":"Lemons","info":"FS","sub":"Fruit"},{"id":"p12","name":"Limes","info":"FS","sub":"Fruit"},{"id":"p28","name":"Chill","info":"FS/CO","sub":"Herbs & Chilli"},{"id":"p24","name":"Fresh Garlic","sub":"Herbs & Chilli"},{"id":"p27","name":"Jalapeño","sub":"Herbs & Chilli"},{"id":"p32","name":"Lime Leaves","sub":"Herbs & Chilli"},{"id":"p25","name":"Coleslaw","info":"CO","sub":"Vegetables"},{"id":"p8","name":"Cos Lettuce","sub":"Vegetables"},{"id":"p9","name":"Cucumber’s","info":"FS","sub":"Vegetables"},{"id":"p19","name":"Rocket Lettuce","info":"FS","sub":"Vegetables"},{"id":"p21","name":"Tomato’s","info":"FS","sub":"Vegetables"},{"id":"p31","name":"Beans","info":"FS/CO/AL","sub":"Vegetables"},{"id":"p3","name":"Broccoli","sub":"Vegetables"},{"id":"p2","name":"Broccolini","info":"FS/AL","sub":"Vegetables"},{"id":"p4","name":"Capsicum Green","info":"FS","sub":"Vegetables"},{"id":"p5","name":"Capsicums Red","info":"FS","sub":"Vegetables"},{"id":"p6","name":"Carrots","info":"FS","sub":"Vegetables"},{"id":"p7","name":"Cauliflower","info":"FS","sub":"Vegetables"},{"id":"p10","name":"Celery","sub":"Vegetables"},{"id":"p14","name":"Mushrooms — Sliced","info":"FS/AL","sub":"Vegetables"},{"id":"p15","name":"Mushrooms — Whole x large","info":"FS/AL","sub":"Vegetables"},{"id":"p17","name":"Onions — Brown","info":"FS","sub":"Vegetables"},{"id":"p16","name":"Onions — Red","info":"FS","sub":"Vegetables"},{"id":"p18","name":"Potato","info":"FS","sub":"Vegetables"},{"id":"p26","name":"Pumpkin 1/4","info":"FS","sub":"Vegetables"},{"id":"p30","name":"Spring onions","sub":"Vegetables"},{"id":"p20","name":"Sweat Potato","info":"FS","sub":"Vegetables"},{"id":"p22","name":"Zucchini","info":"FS","sub":"Vegetables"}]},{"id":"a16","name":"Health","products":[{"id":"p374","name":"Rose-Hip Vital Canine 500g","sub":"Pet"},{"id":"p373","name":"Creatine Powder — Vital Strength-100% Pure","sub":"Supplements"},{"id":"p375","name":"Schuessler-Tissue Salts","sub":"Supplements"}]},{"id":"a10","name":"Herbs & Spices","products":[{"id":"p316","name":"Baking Powder","sub":"Baking & Sweeteners"},{"id":"p315","name":"Coco Earth Almond Flour","sub":"Baking & Sweeteners"},{"id":"p317","name":"Monkfruit Erythritol White","sub":"Baking & Sweeteners"},{"id":"p318","name":"Monkfruit Eythritol Raw","sub":"Baking & Sweeteners"},{"id":"p277","name":"Bouquet Garni","info":"CO/WW","sub":"Blends"},{"id":"p279","name":"Cajun Spice Blend","info":"CO/WW/AL","sub":"Blends"},{"id":"p285","name":"Chinese Five Spice","info":"CO/WW","sub":"Blends"},{"id":"p289","name":"Curry — Mild Spicy","info":"CO/WW","sub":"Blends"},{"id":"p293","name":"Garam Masala","info":"CO/WW/AL","sub":"Blends"},{"id":"p295","name":"Italian Herbs","info":"CO/WW/AL","sub":"Blends"},{"id":"p296","name":"Keens Curry","info":"CO/WW","sub":"Blends"},{"id":"p297","name":"Mixed Herbs","info":"CO/WW/AL","sub":"Blends"},{"id":"p299","name":"Nashville Style Spice","info":"CO/WW","sub":"Blends"},{"id":"p305","name":"Pickling Powder","info":"CO/WW","sub":"Blends"},{"id":"p307","name":"Ras El Hanout","info":"CO/WW","sub":"Blends"},{"id":"p309","name":"Shichimi Togarashi","info":"CO/WW/AL","sub":"Blends"},{"id":"p314","name":"Za’atar Mix","info":"CO/WW","sub":"Blends"},{"id":"p304","name":"Oregano","info":"CO/WW/AL","sub":"Herbs"},{"id":"p308","name":"Sage Dried","info":"CO/WW","sub":"Herbs"},{"id":"p312","name":"Thyme Leaves","info":"CO/WW","sub":"Herbs"},{"id":"p278","name":"Candle Nuts","info":"CO/WW","sub":"Other"},{"id":"p280","name":"Cardamom Pods","info":"CO/WW","sub":"Seeds"},{"id":"p287","name":"Coriander Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p292","name":"Fennel Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p291","name":"Fenugreek Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p298","name":"Mustard Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p300","name":"Niggela Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p306","name":"Poppy Seeds","info":"CO/WW","sub":"Seeds"},{"id":"p276","name":"All Spices","sub":"Spices"},{"id":"p281","name":"Cardamom Powder","info":"CO/WW/AL","sub":"Spices"},{"id":"p282","name":"Cayenne Pepper","info":"CO/WW","sub":"Spices"},{"id":"p284","name":"Chilli — Whole","info":"CO/WW","sub":"Spices"},{"id":"p283","name":"Chilli Powder","info":"CO/WW","sub":"Spices"},{"id":"p286","name":"Cloves","info":"CO/WW","sub":"Spices"},{"id":"p288","name":"Coriander Powder","info":"CO/WW","sub":"Spices"},{"id":"p290","name":"Cumin Powder","info":"CO/WW","sub":"Spices"},{"id":"p294","name":"Garlic Powder","info":"CO/WW/AL","sub":"Spices"},{"id":"p301","name":"Nutmeg Ground","info":"CO/WW","sub":"Spices"},{"id":"p302","name":"Nutmeg Whole Nuts","info":"CO/WW","sub":"Spices"},{"id":"p303","name":"Onion Powder","info":"CO/WW","sub":"Spices"},{"id":"p313","name":"Organic Tumeric","sub":"Spices"},{"id":"p310","name":"Star of Anise","info":"CO/WW/AL","sub":"Spices"},{"id":"p311","name":"Sumac — Sour Spice","info":"CO/WW/AL","sub":"Spices"}]},{"id":"a18","name":"Kitchen Cleaning","products":[{"id":"p388","name":"Bags — Garbage Bin 240 Ltr","info":"CO","sub":"Bags & Bins"},{"id":"p390","name":"Bags — Tubs","info":"CO","sub":"Bags & Bins"},{"id":"p389","name":"Garbage Kitchen","info":"AL","sub":"Bags & Bins"},{"id":"p386","name":"All Purpose Cleaner","info":"AL","sub":"Cleaners"},{"id":"p394","name":"Domestos","info":"AL","sub":"Cleaners"},{"id":"p395","name":"Easy Off Oven","info":"CO/WW/BU","sub":"Cleaners"},{"id":"p396","name":"Floor Cleaner","info":"CO/WW/AL/BU","sub":"Cleaners"},{"id":"p398","name":"Miracle Soap","info":"CO/WW","sub":"Cleaners"},{"id":"p401","name":"Toilet Cartridge — Ducks","info":"CO/WW","sub":"Cleaners"},{"id":"p404","name":"Window Cleaner","info":"AL/BU","sub":"Cleaners"},{"id":"p391","name":"Dishwashing Liquid","info":"AL","sub":"Dishwashing"},{"id":"p393","name":"Dishwashing Rinse Aid","info":"AL","sub":"Dishwashing"},{"id":"p392","name":"Dishwashing Tablets","info":"AL","sub":"Dishwashing"},{"id":"p387","name":"Clothes Washing Powder","info":"AL","sub":"Laundry"},{"id":"p402","name":"Vanish Oxi Action Granules","info":"CO/WW","sub":"Laundry"},{"id":"p397","name":"Micro Clothes","info":"AB","sub":"Pads & Cloths"},{"id":"p405","name":"Replacement Scouters-Wand","info":"CO","sub":"Pads & Cloths"},{"id":"p399","name":"Scrubbing Pads — Cause","info":"CO/WW","sub":"Pads & Cloths"},{"id":"p400","name":"Scrubbing Pads — Fine","info":"CO/WW","sub":"Pads & Cloths"},{"id":"p403","name":"Washing Pads","sub":"Pads & Cloths"}]},{"id":"a17","name":"Kitchen Food","products":[{"id":"p376","name":"Baking Paper","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p377","name":"Glad Wrap","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p378","name":"Hand Towels","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p379","name":"Napkins","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p380","name":"Tissues","info":"CO/WW/AL","sub":"Paper & Wraps"},{"id":"p381","name":"Snap Seal — 15 x 9","info":"CO","sub":"Storage Bags"},{"id":"p382","name":"Snap Seal — 18 x17","info":"CO","sub":"Storage Bags"},{"id":"p383","name":"Snap Seal — 22 x 22.5","info":"CO","sub":"Storage Bags"},{"id":"p384","name":"Snap Seal — 22 x 25","info":"CO","sub":"Storage Bags"},{"id":"p385","name":"Snap Seal — 27 x 33","info":"CO","sub":"Storage Bags"}]},{"id":"a19","name":"Laundry Cleaning","products":[{"id":"p406","name":"All Purpose Cleaner","sub":"Cleaners"},{"id":"p407","name":"Dishwashing Liquid — Sml","info":"CO/WW","sub":"Cleaners"},{"id":"p409","name":"Gumption","info":"CO/WW/BU","sub":"Cleaners"},{"id":"p414","name":"Toilet Cartridge — Ducks","info":"CO/WW","sub":"Cleaners"},{"id":"p410","name":"Handwashing Lotion — Foaming","info":"CO/WW/CW","sub":"Handwashing"},{"id":"p412","name":"Sards Soap","info":"CO/WW/CW","sub":"Laundry"},{"id":"p411","name":"Sards Stick","info":"CO/WW/BU","sub":"Laundry"},{"id":"p413","name":"Stain Remover — Exit Blocks","info":"CO/WW","sub":"Laundry"},{"id":"p415","name":"Washing Powder","info":"AL","sub":"Laundry"},{"id":"p408","name":"Fire Starters","sub":"Other"}]},{"id":"a22","name":"Medical Products","products":[{"id":"p433","name":"Band Aids","info":"CO","sub":"First Aid"},{"id":"p434","name":"Milton-30 Anti-Bacterial Tablets","sub":"First Aid"},{"id":"p430","name":"(FR) Paracetamol (Hedanol)","info":"AL","sub":"Medication"},{"id":"p432","name":"Sukin Natural Deodorant","sub":"Personal Care"},{"id":"p429","name":"60+ Years Probiotic — Life Space","info":"CO/WW/CW","sub":"Supplements"},{"id":"p428","name":"Hydralyte Tabs — Black Current","info":"CO/WW/CW","sub":"Supplements"},{"id":"p431","name":"Wild Fish Oil — High Strength — Swisse","info":"CO/CW","sub":"Supplements"}]},{"id":"a15","name":"Oils","products":[{"id":"p357","name":"4Ltr Virgin Olive Oil","info":"CO/WW/AL","sub":"Cooking Oils"},{"id":"p358","name":"Avocado Oil","info":"CO/WW","sub":"Cooking Oils"},{"id":"p353","name":"Caster Oil","info":"CO/WW/CW","sub":"Cooking Oils"},{"id":"p354","name":"Coconut Oil","info":"CO/WW","sub":"Cooking Oils"},{"id":"p355","name":"Coconut Oil Spray","info":"CO/WW","sub":"Cooking Oils"},{"id":"p363","name":"Oh So Natural — Organic Extra Virgin Olive Oil","sub":"Cooking Oils"},{"id":"p356","name":"Sesame Oil — Pure","info":"CO/WW","sub":"Cooking Oils"},{"id":"p360","name":"Essential Oils — Lavender","sub":"Essential Oils"},{"id":"p361","name":"Essential Oils — Oregano","sub":"Essential Oils"},{"id":"p359","name":"Essential Oils — Peppermint","sub":"Essential Oils"},{"id":"p362","name":"Essential Oils — Wild Orange","sub":"Essential Oils"},{"id":"p372","name":"Nirvana Organics Liquid Stevia — Butterscotch","sub":"Sweeteners"},{"id":"p371","name":"Nirvana Organics Liquid Stevia — Caramel","sub":"Sweeteners"},{"id":"p364","name":"Apple Cider Vinegar — Organic","info":"CO","sub":"Vinegar"},{"id":"p367","name":"Balsamic Vinegar Of Modena","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p369","name":"Malt Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p365","name":"Red Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p368","name":"Rice Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p370","name":"White Vinegar","info":"CO/WW/AL","sub":"Vinegar"},{"id":"p366","name":"White Wine Vinegar","info":"CO/WW/AL","sub":"Vinegar"}]},{"id":"a12","name":"Pellets","products":[{"id":"p335","name":"Fruit Wood with Charcoal.","info":"SB","sub":"Smoking Pellets"},{"id":"p336","name":"Texas Bland with Charcoal","info":"SB","sub":"Smoking Pellets"}]},{"id":"a20","name":"Pet Gear","products":[{"id":"p417","name":"Deremcare — Malaise Mala — Medicated Shampoo","sub":"Grooming"},{"id":"p419","name":"Shampoo and Conditioner Combined","sub":"Grooming"},{"id":"p416","name":"Chews","info":"AL","sub":"Treats"},{"id":"p418","name":"Poo Bags","info":"CO","sub":"Waste"}]},{"id":"a11","name":"Rubs","products":[{"id":"p320","name":"Bagel Spicy Edition","sub":"BBQ Rubs"},{"id":"p321","name":"Bourbon BBQ","sub":"BBQ Rubs"},{"id":"p322","name":"Braai Smoky BBQ","sub":"BBQ Rubs"},{"id":"p326","name":"Charcoal","sub":"BBQ Rubs"},{"id":"p325","name":"Charcoal Chicken Shop","sub":"BBQ Rubs"},{"id":"p323","name":"Dalmatian Brisket","sub":"BBQ Rubs"},{"id":"p327","name":"Gourmet BBQ","sub":"BBQ Rubs"},{"id":"p328","name":"Gunpowder Smokey","sub":"BBQ Rubs"},{"id":"p329","name":"Korean BBQ","sub":"BBQ Rubs"},{"id":"p334","name":"The White Rub","sub":"BBQ Rubs"},{"id":"p331","name":"Smoked Sea salt For Lamb","sub":"Salts"},{"id":"p330","name":"Smokey Chilli Lime Salt","sub":"Salts"},{"id":"p324","name":"Burger Sauce Seasoning","sub":"Seasonings"},{"id":"p332","name":"Souvlaki Seasoning","sub":"Seasonings"},{"id":"p333","name":"Sweet N Smokey Cajon","sub":"Seasonings"}]},{"id":"a7","name":"Sauces","products":[{"id":"p213","name":"Kikkomen-Tamari Soy Sauce","sub":"Asian"},{"id":"p217","name":"Chilli Oil","sub":"Hot & Spicy"},{"id":"p211","name":"Red Hot Wings","info":"CO/WW","sub":"Hot & Spicy"},{"id":"p216","name":"Siracha Mayo Sauce","sub":"Hot & Spicy"},{"id":"p215","name":"Sweet Chilli Sauce","sub":"Hot & Spicy"},{"id":"p212","name":"Tabasco Sauce","info":"CO/WW","sub":"Hot & Spicy"},{"id":"p210","name":"Mustard — French’s Classic Yellow Mustard","sub":"Mustard"},{"id":"p218","name":"Mingle-Sauce-BBQ","info":"WW3","sub":"Table Sauces"},{"id":"p220","name":"Mingle-Sauce-Sweet Chilli","info":"WW3","sub":"Table Sauces"},{"id":"p219","name":"Mingle-Sauce-Tomato","info":"WW3","sub":"Table Sauces"},{"id":"p214","name":"Worcestershire Sauce","info":"CO/WW","sub":"Table Sauces"}]},{"id":"a14","name":"Seasonings","products":[{"id":"p348","name":"Salt — Celtic — Fine","info":"IS","sub":"Salt & Pepper"},{"id":"p349","name":"White Ground Pepper","info":"CO/WW/AL","sub":"Salt & Pepper"},{"id":"p350","name":"Massel Stock Cubes — Beef","info":"CO/WW","sub":"Stock Cubes"},{"id":"p351","name":"Stock Cubes — Chicken","info":"CO/WW","sub":"Stock Cubes"},{"id":"p352","name":"Stock Cubes — Vegetable","info":"CO/WW","sub":"Stock Cubes"}]},{"id":"a6","name":"Snacks & Treats","products":[{"id":"p207","name":"Pork Crackles","info":"CO","sub":"Savoury"},{"id":"p209","name":"Double D — Butter Candy","sub":"Sweets & Chocolate"},{"id":"p208","name":"Double D — Fruit Jellies","sub":"Sweets & Chocolate"},{"id":"p205","name":"NS — Dark Chocolate","info":"WW","sub":"Sweets & Chocolate"},{"id":"p206","name":"NS-Fruit & Nut","info":"WW","sub":"Sweets & Chocolate"}]},{"id":"a13","name":"Sweetener Substitutes","products":[{"id":"p346","name":"Choc Baking Chips — Noshu","info":"CO/WW","sub":"Baking Chips"},{"id":"p347","name":"Choc White Baking Chips — Noshu","info":"CO/WW","sub":"Baking Chips"},{"id":"p345","name":"Monkfruit — Baking Blend","info":"CO/WW/CW","sub":"Monkfruit"},{"id":"p344","name":"Monkfruit — Icing Powder","info":"CO/WW","sub":"Monkfruit"},{"id":"p343","name":"Monkfruit — Raw","info":"CO/WW","sub":"Monkfruit"},{"id":"p342","name":"Monkfruit — White","info":"CO/WW","sub":"Monkfruit"},{"id":"p337","name":"Stevia Liquid — Butterscotch","info":"CO/WW/CW","sub":"Stevia"},{"id":"p338","name":"Stevia Liquid — Caramel","info":"CO/WW","sub":"Stevia"},{"id":"p339","name":"Stevia Liquid — Original","info":"CO/WW/CW","sub":"Stevia"},{"id":"p340","name":"Stevia Liquid — Vanilla","info":"CO/WW/CW","sub":"Stevia"},{"id":"p341","name":"Vanilla Extract — Concentrated","info":"CO/WW/AL","sub":"Vanilla"}]}]};
 
 /* ============================================================
    SHARED SYNC CONFIG — fill in the anon (public) key below.
@@ -258,7 +382,7 @@ function fmtDate(d){
 }
 
 let S = {
-  tab:'list', refOpen:true, refCats:{}, focus:null, allItems:false, catsOpen:true, shopView:'az', limit:50, log:[], title:'Shop — '+fmtDate(new Date()), query:'', dirty:false,
+  tool:'list', tab:'list', refOpen:true, refCats:{}, focus:null, allItems:false, catsOpen:true, shopView:'az', limit:50, log:[], title:'Shop — '+fmtDate(new Date()), query:'', dirty:false,
   aisles: DATA.aisles.map(a=>({
     id:a.id, name:a.name, collapsed:false,
     products:a.products.map(p=>({
@@ -267,9 +391,25 @@ let S = {
       buy:1, onList:false, bought:false
     }))
   })),
-  history:[]
+  history:[], menu:[], chefs:[], jobs:[], people:[], workers:[], allocators:[], jobView:'list'
 };
 let seq = 1000;
+function syncSeq(){
+  const note=id=>{ const n=String(id||'').match(/\d+/); if(n && +n[0]>=seq) seq=+n[0]; };
+  (S.menu||[]).forEach(m=>note(m.id));
+  (S.jobs||[]).forEach(j=>{ note(j.id); (j.stages||[]).forEach(s=>note(s.id)); });
+  (S.aisles||[]).forEach(a=>{ note(a.id); (a.products||[]).forEach(p=>note(p.id)); });
+}
+function repairMealIds(){
+  syncSeq();
+  const seen=new Set();
+  let changed=false;
+  (S.menu||[]).forEach(m=>{
+    if(!m.id||seen.has(m.id)){ m.id='m'+(++seq); changed=true; }
+    seen.add(m.id);
+  });
+  return changed;
+}
 
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sortkey = s => String(s).toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
@@ -334,7 +474,7 @@ function save(){
     try{
       const { error } = await SB.from('house_list').upsert({
         id: ROW_ID, rev: REV, updated_by: ME || 'Someone',
-        data: { title:S.title, aisles:S.aisles, history:S.history, log:S.log }
+        data: { title:S.title, aisles:S.aisles, history:S.history, log:S.log, menu:S.menu||[], chefs:S.chefs||[], jobs:S.jobs||[], people:S.people||[], workers:S.workers||[], allocators:S.allocators||[] }
       });
       if(error) throw error;
       setSync('Saved '+stamp());
@@ -352,10 +492,18 @@ function applyRemote(row){
   if(!d.aisles || !d.aisles.length) return;
   REV = row.rev;
   S.title = d.title || S.title; S.aisles = d.aisles; S.history = d.history || [];
+  if(Array.isArray(d.menu)) S.menu = d.menu;
+  if(Array.isArray(d.chefs)) S.chefs = d.chefs;
+  if(Array.isArray(d.jobs)) S.jobs = d.jobs;
+  if(Array.isArray(d.people)) S.people = d.people;
+  if(Array.isArray(d.workers)) S.workers = d.workers;
+  if(Array.isArray(d.allocators)) S.allocators = d.allocators;
   const fresh = (d.log||[]).filter(e=>e.t>seenAt && e.by!==ME);
   S.log = d.log || [];
   if(S.log.length) seenAt = Math.max(seenAt, S.log[0].t);
-  normalise(); render();
+  normalise();
+  if(repairMealIds()) save();
+  render();
   fresh.slice(0,4).reverse().forEach(toast);
   if(fresh.length>4) toast({by:'', k:'add', n:(fresh.length-4)+' more changes', w:''});
   setSync('Updated by '+(row.updated_by||'someone')+' \u00b7 '+stamp());
@@ -385,39 +533,42 @@ function normalise(){
   sortAisles();
 }
 
-function storeBtn(p){
-  if(!p.stores.length)
-    return `<button class="store empty" data-act="stores" data-p="${p.id}">+ Add store</button>`;
-  return `<button class="store" data-act="stores" data-p="${p.id}">${
-    p.stores.map(s=>`<span class="code">${esc(s.code)}</span>`).join('')
-  }</button>`;
+function aisleSet(s){
+  const a=String(s&&s.aisle||'').trim();
+  return a && a.toLowerCase()!=='unknown';
 }
-
-function aisleBtn(p){
-  const set = p.stores.filter(s=>s.aisle);
-  if(!set.length)
-    return `<button class="store empty" data-act="stores" data-p="${p.id}">+ Add aisle</button>`;
-  return `<button class="store" data-act="stores" data-p="${p.id}"><span class="lab">AISLE</span>${
-    set.map(s=>`<span class="code">${esc(s.code)}<span class="a">${esc(s.aisle)}</span></span>`).join('')
-  }</button>`;
+function storeBits(p){
+  const chips=(p.stores||[]).map(s=>{
+    const aisle=aisleSet(s)
+      ? `<span class="aisle">${esc(s.aisle)}</span>`
+      : `<span class="need">Aisle</span>`;
+    return `<button class="store" data-act="aisle" data-p="${p.id}" data-code="${esc(s.code)}" title="Set the aisle at ${esc(s.code)}"><span class="code">${esc(s.code)}</span>${aisle}</button>`;
+  }).join('');
+  return chips+addStoreBtn(p);
+}
+function addStoreBtn(p){
+  return `<button class="store add" data-act="addstore" data-p="${p.id}">+ Add store/aisle</button>`;
 }
 
 function productRow(p, crumb){
-  return `<div class="row ${p.onList?'on':''} ${p.bought?'bought':''}">
-    <button class="tick" data-act="toggle" data-p="${p.id}" aria-label="Add to list">\u2713</button>
-    <div class="row-main">
-      ${crumb?`<div class="crumb">${esc(crumb)}</div>`:''}
-      <div class="row-name">${esc(p.name)}${p.by&&p.by!==ME?`<span class="by">added by ${esc(p.by)}</span>`:''}</div>
+  return `<div class="row item ${p.onList?'on':''} ${p.bought?'bought':''}">
+    <div class="topbit">
+      <button class="tick" data-act="toggle" data-p="${p.id}" aria-label="Add to list">\u2713</button>
+      <div class="row-main">
+        ${crumb?`<div class="crumb">${esc(crumb)}</div>`:''}
+        <div class="row-name">${esc(p.name)}${p.by&&p.by!==ME?`<span class="by">added by ${esc(p.by)}</span>`:''}</div>
+      </div>
+      <div class="row-acts">
+        <button class="sq no" data-act="del" data-p="${p.id}" title="Delete item">\u2715</button>
+      </div>
+    </div>
+    <div class="lowbit">
+      <span class="starslot">${mealStar(p)}</span>
       <div class="chips">
         ${p.qty?`<span class="chip qty">${esc(p.qty)}</span>`:''}
         <span class="stepper"><span class="lab">BUY</span><button data-act="buy-" data-p="${p.id}">\u2212</button><span class="val">${p.buy}</span><button data-act="buy+" data-p="${p.id}">+</button></span>
-        ${storeBtn(p)}
-        ${aisleBtn(p)}
+        ${storeBits(p)}
       </div>
-    </div>
-    <div class="row-acts">
-      <button class="sq ok" data-act="bought" data-p="${p.id}" title="Mark purchased">\u2713</button>
-      <button class="sq no" data-act="del" data-p="${p.id}" title="Delete item">\u2715</button>
     </div>
   </div>`;
 }
@@ -431,10 +582,460 @@ function subhead(a,g){
   </div>`;
 }
 
-function renderTabs(){
-  const t=[['list','List',onListCount()],['shop','Shop',onListCount()-boughtCount()],['history','History',S.history.length]];
-  document.getElementById('tabs').innerHTML = t.map(([k,l,n])=>
-    `<button class="tab ${S.tab===k?'on':''}" data-tab="${k}">${l}<span class="n">${n}</span></button>`).join('');
+function renderTop(){
+  const tools=[['list','Shopping List'],['menu','Meal Menu'],['jobs','Jobs To Do']];
+  document.getElementById('tools').innerHTML = tools.map(([k,l])=>
+    `<button class="tab ${S.tool===k?'on':''}" data-tool="${k}">${l}</button>`).join('');
+  const tabs=document.getElementById('tabs');
+  if(S.tool!=='list'){ tabs.hidden=true; tabs.innerHTML=''; }
+  else {
+    tabs.hidden=false;
+    const t=[['list','List',onListCount()],['shop','Shop',onListCount()-boughtCount()],['history','History',S.history.length]];
+    tabs.innerHTML = t.map(([k,l,n])=>
+      `<button class="tab ${S.tab===k?'on':''}" data-tab="${k}">${l}<span class="n">${n}</span></button>`).join('');
+  }
+  const h=document.getElementById('top').offsetHeight;
+  document.documentElement.style.setProperty('--topbar', h+'px');
+}
+let JOB_MSG='';
+function rememberRole(key, name){
+  const n=String(name||'').trim();
+  if(!n) return;
+  if(!Array.isArray(S[key])) S[key]=[];
+  if(!S[key].some(c=>c.toLowerCase()===n.toLowerCase())) S[key].push(n);
+}
+function roleNames(key){
+  return (Array.isArray(S[key])?S[key]:[]).slice().sort((a,b)=>a.localeCompare(b));
+}
+function nameList(v){
+  if(Array.isArray(v)) return v.map(n=>String(n||'').trim()).filter(Boolean);
+  const t=String(v||'').trim();
+  return t?[t]:[];
+}
+function toggleName(list, name){
+  const cur=nameList(list);
+  const at=cur.findIndex(n=>n.toLowerCase()===String(name||'').toLowerCase());
+  if(at>=0) cur.splice(at,1);
+  else if(name) cur.push(name);
+  return cur;
+}
+function withCurrent(list, current){
+  const out=list.slice();
+  nameList(current).forEach(t=>{
+    if(!out.some(n=>n.toLowerCase()===t.toLowerCase())) out.push(t);
+  });
+  return out;
+}
+function personButtons(list, selected, act, jid){
+  if(!list.length) return '<p class="hint" style="margin:0">None yet. Add one with the button above.</p>';
+  const set=new Set(nameList(selected).map(n=>n.toLowerCase()));
+  return `<div class="daybtns">${list.map(n=>
+    `<button type="button" class="${set.has(n.toLowerCase())?'on':''}" data-act="${act}" data-j="${jid}" data-name="${esc(n)}">${esc(n)}</button>`
+  ).join('')}</div>`;
+}
+function roleChips(list, act){
+  return list.map(n=>`<span class="chip">${esc(n)} <button data-act="${act}" data-name="${esc(n)}" style="border:0;background:none;color:var(--red);font-weight:700;padding:0 0 0 4px" title="Remove">\u2715</button></span>`).join('');
+}
+function ensureJobEdit(){
+  if(!S.jobEdit) S.jobEdit={};
+  if(!S.jobDraft) S.jobDraft={};
+}
+function flushJobCard(id){
+  const draft=S.jobDraft&&S.jobDraft[id];
+  const card=document.querySelector('.row.job[data-jid="'+id+'"]');
+  if(!draft||!card||draft._deleted) return;
+  const name=card.querySelector('.jname');
+  const desc=card.querySelector('.jdesc');
+  const started=card.querySelector('.jstart');
+  const finished=card.querySelector('.jfinish');
+  if(name) draft.name=name.value.trim();
+  if(desc) draft.description=desc.value.trim();
+  if(started) draft.started=started.value;
+  if(finished) draft.finished=finished.value;
+  card.querySelectorAll('.stagebox').forEach(box=>{
+    const st=(draft.stages||[]).find(s=>s.id===box.dataset.s);
+    if(!st) return;
+    const sn=box.querySelector('.sname');
+    const ss=box.querySelector('.sstart');
+    const sf=box.querySelector('.sfin');
+    if(sn) st.name=sn.value.trim();
+    if(ss) st.started=ss.value;
+    if(sf) st.finished=sf.value;
+  });
+  card.querySelectorAll('.equip[data-e]').forEach(row=>{
+    const g=(draft.equipment||[]).find(x=>x.id===row.dataset.e);
+    if(!g) return;
+    const inp=row.querySelector('.ename');
+    if(inp) g.name=inp.value.trim();
+  });
+}
+function showDay(iso){ return iso?fmtDate(parseDay(iso)):''; }
+function equipList(j, open){
+  const list=Array.isArray(j.equipment)?j.equipment:[];
+  if(!open){
+    if(!list.length) return '<p class="meal-lock">No equipment yet</p>';
+    return list.map(g=>`<div class="equip-lock"><span class="tick ${g.got?'on':''}">${g.got?'\u2713':''}</span><span>${esc(g.name)}${g.got?' · got it':''}</span></div>`).join('');
+  }
+  return list.map(g=>`<div class="equip" data-e="${esc(g.id)}">
+      <button type="button" class="tick ${g.got?'on':''}" data-act="gotgear" data-j="${esc(j.id)}" data-e="${esc(g.id)}" title="Tick when you have this">${g.got?'\u2713':''}</button>
+      <input class="ename" data-j="${esc(j.id)}" data-e="${esc(g.id)}" value="${esc(g.name||'')}" placeholder="e.g. Ladder" aria-label="Equipment">
+      <button type="button" class="btn" data-act="delequip" data-j="${esc(j.id)}" data-e="${esc(g.id)}">Remove</button>
+    </div>`).join('')+`<button type="button" class="btn" data-act="addequip" data-j="${esc(j.id)}">+ Add equipment</button>`;
+}
+function jobCard(j, open){
+  const bits=(j.links||[]).map(it=>{
+    const id=itemId(it);
+    const [,p]=findP(id);
+    const x=open?` <button data-act="delplink" data-j="${esc(j.id)}" data-ing="${esc(id)}" style="border:0;background:none;color:var(--red);font-weight:700;padding:0 0 0 4px" title="Remove">\u2715</button>`:'';
+    return `<span class="chip">${esc(p?p.name:id)}${x}</span>`;
+  }).join('');
+  const raised=nameList(j.raisedBy).join(', ')||'Nobody';
+  const doneBy=nameList(j.doneBy).join(', ')||'Nobody';
+  const stages=(j.stages||[]).filter(s=>s.name);
+  const body=open?`
+      <input class="jname" data-j="${esc(j.id)}" value="${esc(j.name||'')}" placeholder="Job name" aria-label="Job name">
+      <div class="job-meta">
+        <div class="when-bit">
+          <span class="when-lab">Job Raised By <span style="font-weight:500">(pick one or more)</span></span>
+          ${personButtons(withCurrent(roleNames('allocators'), j.raisedBy), j.raisedBy||'', 'pickalloc', j.id)}
+        </div>
+        <div class="when-bit">
+          <span class="when-lab">Job to be Done By <span style="font-weight:500">(pick one or more)</span></span>
+          ${personButtons(withCurrent(roleNames('workers'), j.doneBy), j.doneBy||'', 'pickwork', j.id)}
+        </div>
+      </div>
+      <div class="when-bit">
+        <span class="when-lab">Job Description</span>
+        <textarea class="jdesc" data-j="${esc(j.id)}" placeholder="What needs doing" aria-label="Job description">${esc(j.description||'')}</textarea>
+      </div>
+      <div class="job-meta">
+        <div class="when-bit">
+          <span class="when-lab">Job Started</span>
+          <input class="jstart" data-j="${esc(j.id)}" type="date" value="${esc(j.started||'')}" aria-label="Job started">
+        </div>
+        <div class="when-bit">
+          <span class="when-lab">Job Finished</span>
+          <input class="jfinish" data-j="${esc(j.id)}" type="date" value="${esc(j.finished||'')}" aria-label="Job finished">
+        </div>
+      </div>
+      <div class="when-bit">
+        <span class="when-lab">Stages</span>
+        ${(j.stages||[]).map(s=>`<div class="stagebox" data-s="${esc(s.id)}">
+          <input class="sname" data-j="${esc(j.id)}" data-s="${esc(s.id)}" value="${esc(s.name||'')}" placeholder="Stage name" aria-label="Stage name">
+          <div class="job-meta">
+            <input class="sstart" data-j="${esc(j.id)}" data-s="${esc(s.id)}" type="date" value="${esc(s.started||'')}" aria-label="Stage started">
+            <input class="sfin" data-j="${esc(j.id)}" data-s="${esc(s.id)}" type="date" value="${esc(s.finished||'')}" aria-label="Stage finished">
+          </div>
+          <button class="btn" data-act="delstage" data-j="${esc(j.id)}" data-s="${esc(s.id)}">Remove stage</button>
+        </div>`).join('')}
+        <button class="btn" data-act="addstage" data-j="${esc(j.id)}" style="margin-top:8px">+ Add stage</button>
+      </div>
+      <div class="when-bit">
+        <span class="when-lab">Equipment required</span>
+        <p class="hint">Tick an item once you have it. Save keeps the tick.</p>
+        ${equipList(j, true)}
+      </div>
+      <div class="when-bit">
+        <span class="when-lab">Product Links</span>
+        <div class="chips">${bits||'<span class="chip">No products linked yet</span>'}</div>
+        <div class="meal-add">
+          <input class="jplink" data-j="${esc(j.id)}" list="menuitems" placeholder="Type a product from your list" value="" aria-label="Product link">
+          <button class="btn go" data-act="addplink" data-j="${esc(j.id)}">Add</button>
+        </div>
+      </div>`:`
+      <div class="row-name">${esc(j.name||'Untitled')}</div>
+      <div class="meal-lock">Raised by ${esc(raised)} · Done by ${esc(doneBy)}</div>
+      <div class="meal-lock">${esc(j.description||'No description')}</div>
+      <div class="meal-lock">${j.started?'Started '+esc(showDay(j.started)):'Not started'} · ${j.finished?'Finished '+esc(showDay(j.finished)):'Not finished'}</div>
+      <div class="meal-lock">${stages.length?stages.map(s=>esc(s.name)).join(', '):'No stages'}</div>
+      <div class="when-bit">
+        <span class="when-lab">Equipment required</span>
+        ${equipList(j, false)}
+      </div>
+      <div class="chips">${bits||'<span class="chip">No products linked yet</span>'}</div>`;
+  return `<div class="row job ${open?'editing':''} ${j.finished?'done':''}" data-jid="${esc(j.id)}">
+    <div class="job-body">
+      <div class="row-main">${body}</div>
+      ${open?`<div class="row-acts"><button class="sq no" data-act="deljob" data-j="${esc(j.id)}" title="Delete job">\u2715</button></div>`:''}
+    </div>
+    <div class="job-foot">
+      <button class="btn ${open?'on':''}" data-act="jobedit" data-j="${esc(j.id)}" ${open?'disabled':''}>Edit</button>
+      <button class="btn btn-solid" data-act="jobsave" data-j="${esc(j.id)}" ${open?'':'disabled'}>Save</button>
+    </div>
+  </div>`;
+}
+function jobCovers(j, iso){
+  const today=isoDate(new Date());
+  let a=j.started||'', b=j.finished||'';
+  if(!a && !b) return false;
+  if(!a) a=b;
+  if(!b) b = a<=today ? today : a;
+  if(a>b){ const t=a; a=b; b=t; }
+  return iso>=a && iso<=b;
+}
+function ganttDays(jobs){
+  const today=isoDate(new Date());
+  const stamps=[today];
+  jobs.forEach(j=>{
+    if(j.started) stamps.push(j.started);
+    if(j.finished) stamps.push(j.finished);
+    (j.stages||[]).forEach(s=>{ if(s.started) stamps.push(s.started); if(s.finished) stamps.push(s.finished); });
+  });
+  stamps.sort();
+  let start=mondayOf(parseDay(stamps[0]));
+  let end=parseDay(stamps[stamps.length-1]);
+  const endDow=end.getDay();
+  end=addDays(end, endDow===0?0:7-endDow);
+  if(end-start < 13*86400000) end=addDays(start, 13);
+  const cap=addDays(start, 16*7-1);
+  if(end>cap) end=cap;
+  const days=[];
+  for(let d=new Date(start); d<=end; d=addDays(d,1)) days.push(new Date(d));
+  return days;
+}
+function ganttCells(item, days, today){
+  return days.map((d,i)=>{
+    const iso=isoDate(d);
+    const on=jobCovers(item, iso);
+    const prev=i>0 && jobCovers(item, isoDate(days[i-1]));
+    const next=i<days.length-1 && jobCovers(item, isoDate(days[i+1]));
+    const cls=['gantt-cell'];
+    if(iso===today) cls.push('today');
+    if(d.getDay()===0||d.getDay()===6) cls.push('wknd');
+    if(on){
+      cls.push('mark');
+      cls.push(item.finished?'done':'open');
+      if(!prev) cls.push('start');
+      if(!next) cls.push('cap');
+    }
+    return `<div class="${cls.join(' ')}"></div>`;
+  }).join('');
+}
+function renderGantt(jobs){
+  const hasDates=j=>!!(j.started||j.finished||(j.stages||[]).some(s=>s.started||s.finished));
+  const dated=jobs.filter(hasDates).slice().sort((a,b)=>String(a.started||a.finished||'').localeCompare(String(b.started||b.finished||''))||cmp(a.name,b.name));
+  const undated=jobs.filter(j=>!hasDates(j));
+  if(!dated.length) return `<p class="note">Set Job Started on a job to see it on the calendar.</p>${undated.length?`<p class="note" style="padding-top:0">${undated.map(j=>esc(j.name||'Untitled')).join(', ')} still need a start date.</p>`:''}`;
+  const days=ganttDays(dated);
+  const today=isoDate(new Date());
+  const months=[];
+  days.forEach(d=>{
+    const key=d.getFullYear()+'-'+d.getMonth();
+    const last=months[months.length-1];
+    const label=d.toLocaleString('en-AU',{month:'short', year:'numeric'});
+    if(last && last.key===key) last.n++;
+    else months.push({key, n:1, label});
+  });
+  const heads=days.map(d=>{
+    const iso=isoDate(d);
+    const wd=['S','M','T','W','T','F','S'][d.getDay()];
+    return `<div class="gantt-day ${iso===today?'today':''} ${d.getDay()===1?'mon':''}"><b>${wd}</b><span>${d.getDate()}</span></div>`;
+  }).join('');
+  const rows=dated.map(j=>{
+    const who=[nameList(j.doneBy).join(', '), nameList(j.raisedBy).join(', ')].filter(Boolean).join(' · ');
+    const stages=(j.stages||[]).map(s=>`<div class="gantt-label sub"><div class="gn">${esc(s.name||'Stage')}</div></div>${ganttCells(s, days, today)}`).join('');
+    return `<div class="gantt-label"><div class="gn">${esc(j.name||'Untitled')}</div>${who?`<div class="gs">${esc(who)}</div>`:''}</div>${ganttCells(j, days, today)}${stages}`;
+  }).join('');
+  const from=fmtDate(days[0]), to=fmtDate(days[days.length-1]);
+  return `<p class="banner"><span>${esc(from)} to ${esc(to)}. Green is still going. Gold is finished. A job with no finish date runs up to today.</span></p>
+    <div class="gantt-key"><span><i class="go"></i>Still going</span><span><i class="fin"></i>Finished</span></div>
+    <div class="gantt-scroll"><div class="gantt" style="--days:${days.length}">
+      <div class="gantt-corner"></div>
+      ${months.map(m=>`<div class="gantt-month" style="grid-column:span ${m.n}">${esc(m.label)}</div>`).join('')}
+      <div class="gantt-corner"></div>
+      ${heads}
+      ${rows}
+    </div></div>
+    ${undated.length?`<p class="note">${undated.map(j=>esc(j.name||'Untitled')).join(', ')} still need a start date.</p>`:''}`;
+}
+function renderJobs(){
+  if(!Array.isArray(S.jobs)) S.jobs=[];
+  if(!Array.isArray(S.workers)) S.workers=[];
+  if(!Array.isArray(S.allocators)) S.allocators=[];
+  document.getElementById('menuitems').innerHTML =
+    allProducts().map(p=>`<option value="${esc(p.name)}"></option>`).join('');
+  const msg=JOB_MSG; JOB_MSG='';
+  const open=S.jobs.filter(j=>!j.finished).slice().sort((a,b)=>cmp(a.name,b.name));
+  const done=S.jobs.filter(j=>j.finished).slice().sort((a,b)=>String(b.finished).localeCompare(String(a.finished))||cmp(a.name,b.name));
+  const block=(list,head)=>{
+    const cards=list.map(j=>{
+      ensureJobEdit();
+      const draft=S.jobDraft[j.id];
+      if(draft&&draft._deleted){
+        return `<div class="row job" data-jid="${esc(j.id)}">
+          <div class="meal-lock">${esc(j.name||'This job')} will be removed when you click Save.</div>
+          <div class="job-foot">
+            <button class="btn" data-act="jobundo" data-j="${esc(j.id)}">Undo</button>
+            <button class="btn btn-solid" data-act="jobsave" data-j="${esc(j.id)}">Save</button>
+          </div>
+        </div>`;
+      }
+      const open=!!(S.jobEdit[j.id]&&draft);
+      return jobCard(open?draft:j, open);
+    }).join('');
+    return cards?(head?`<div class="weekhead">${head}</div>`:'')+`<section class="aisle">${cards}</section>`:'';
+  };
+  const cal=S.jobView==='gantt';
+  document.getElementById('view').innerHTML = `
+    <div class="titlebar" style="font-size:22px;font-weight:700">Jobs To Do</div>
+    ${msg?`<p class="note" style="padding:8px 4px 14px;text-align:left">${esc(msg)}</p>`:''}
+    <div class="viewtabs">
+      <button class="btn ${cal?'':'on'}" data-act="jobview" data-view="list">List</button>
+      <button class="btn ${cal?'on':''}" data-act="jobview" data-view="gantt">Calendar</button>
+    </div>
+    <div class="roleline">
+      <span class="when-lab">Job Allocator</span>
+      ${roleChips(roleNames('allocators'), 'delalloc')}
+      <button class="btn" data-act="addalloc">+ Job Allocator</button>
+    </div>
+    <div class="roleline">
+      <span class="when-lab">Job Worker</span>
+      ${roleChips(roleNames('workers'), 'delwork')}
+      <button class="btn" data-act="addwork">+ Job Worker</button>
+    </div>
+    <div class="roleline">
+      <button class="btn btn-gold" data-act="addjob">+ Add job</button>
+    </div>
+    ${cal?renderGantt(S.jobs):(S.jobs.length?block(open, done.length?'To do':'')+block(done,'Finished'):'<p class="note">No jobs yet.</p>')}`;
+}
+function addProductLink(jid, raw){
+  ensureJobEdit();
+  const draft=S.jobDraft&&S.jobDraft[jid];
+  const p=findProductByName(raw);
+  if(!draft){ JOB_MSG='Click Edit on that job before changing it.'; render(); return; }
+  if(!p){ JOB_MSG='No matching product. Type a name from your house list.'; render(); return; }
+  flushJobCard(jid);
+  if(!draft.links) draft.links=[];
+  if(!draft.links.some(it=>itemId(it)===p.id)) draft.links.push({id:p.id});
+  JOB_MSG='';
+  render();
+}
+function jobModal(){
+  let raised=[], worker=[];
+  let stages=[];
+  let gear=[];
+  const readJob=()=>{
+    const box=host();
+    const nameEl=box.querySelector('#jn');
+    return {
+      name:nameEl?nameEl.value:'',
+      description:box.querySelector('#jx')?box.querySelector('#jx').value:'',
+      started:box.querySelector('#js')?box.querySelector('#js').value:'',
+      finished:box.querySelector('#jf')?box.querySelector('#jf').value:'',
+      stages:[...box.querySelectorAll('.sblock')].map(b=>({
+        name:b.querySelector('.sn').value,
+        started:b.querySelector('.ss').value,
+        finished:b.querySelector('.sf').value
+      })),
+      gear:[...box.querySelectorAll('.ebox')].map(b=>({
+        name:b.querySelector('.en').value,
+        got:!!b.querySelector('.eg').checked
+      }))
+    };
+  };
+  const keep=()=>{ const job=readJob(); stages=job.stages; gear=job.gear; };
+  const draw=()=>{
+    const cur=host().querySelector('#jn')?{
+      name:host().querySelector('#jn').value,
+      description:host().querySelector('#jx').value,
+      started:host().querySelector('#js').value,
+      finished:host().querySelector('#jf').value
+    }:{name:'',description:'',started:'',finished:''};
+    const picks=(list,picked,act)=>{
+      if(!list.length) return `<p class="hint">None yet. Add one with the button on the Jobs page first.</p>`;
+      const set=new Set(nameList(picked).map(n=>n.toLowerCase()));
+      return `<div class="daybtns" style="margin-bottom:18px">${list.map(n=>`<button type="button" class="${set.has(n.toLowerCase())?'on':''}" data-m="${act}" data-name="${esc(n)}">${esc(n)}</button>`).join('')}</div>`;
+    };
+    host().innerHTML=`<div class="scrim"><div class="modal">
+      <h2>Add job</h2>
+      <div class="body">
+        <label>Job Name</label>
+        <input id="jn" placeholder="e.g. Fix the laundry tap" value="${esc(cur.name)}">
+        <label>Job Raised By <span>(pick one or more)</span></label>
+        ${picks(roleNames('allocators'), raised, 'alloc')}
+        <label>Job to be Done By <span>(pick one or more)</span></label>
+        ${picks(roleNames('workers'), worker, 'work')}
+        <label>Job Description</label>
+        <textarea id="jx" placeholder="What needs doing">${esc(cur.description)}</textarea>
+        <label>Job Started <span>(optional)</span></label>
+        <input id="js" type="date" value="${esc(cur.started)}">
+        <label>Job Finished <span>(optional)</span></label>
+        <input id="jf" type="date" value="${esc(cur.finished)}">
+        <label>Stages</label>
+        ${stages.map((s,i)=>`<div class="sblock">
+          <div class="shead"><span>Stage ${i+1}</span><button type="button" class="btn" data-m="delstage" data-i="${i}">Remove</button></div>
+          <label>Stage name</label>
+          <input class="sn" placeholder="e.g. Buy the washer" value="${esc(s.name||'')}">
+          <label>Started <span>(optional)</span></label>
+          <input class="ss" type="date" value="${esc(s.started||'')}">
+          <label>Finished <span>(optional)</span></label>
+          <input class="sf" type="date" value="${esc(s.finished||'')}">
+        </div>`).join('')}
+        <button type="button" class="btn" data-m="addstage" style="margin-bottom:18px">+ Add stage</button>
+        <label>Equipment required</label>
+        <p class="hint">Tick an item once you have it.</p>
+        ${gear.map((g,i)=>`<div class="ebox">
+          <input class="eg" type="checkbox" ${g.got?'checked':''} aria-label="Got it">
+          <input class="en" placeholder="e.g. Ladder" value="${esc(g.name||'')}">
+          <button type="button" class="btn" data-m="delgear" data-i="${i}">Remove</button>
+        </div>`).join('')}
+        <button type="button" class="btn" data-m="addgear">+ Add equipment</button>
+        <p class="hint">Product links are added on the job after you save it.</p>
+      </div>
+      <div class="acts">
+        <button class="btn" data-m="cancel">Cancel</button>
+        <button class="btn go" data-m="ok">Add</button>
+      </div></div></div>`;
+    const name=host().querySelector('#jn');
+    if(name && !cur.name) name.focus();
+  };
+  draw();
+  host().onclick=e=>{
+    const hit=e.target.closest('[data-m]');
+    if(e.target.classList.contains('scrim')||(hit&&hit.dataset.m==='cancel')) return closeModal();
+    if(!hit) return;
+    if(hit.dataset.m==='alloc'){ keep(); raised=toggleName(raised, hit.dataset.name); draw(); return; }
+    if(hit.dataset.m==='work'){ keep(); worker=toggleName(worker, hit.dataset.name); draw(); return; }
+    if(hit.dataset.m==='addstage'){
+      keep();
+      stages.push({name:'',started:'',finished:''});
+      draw();
+      const boxes=host().querySelectorAll('.sn');
+      if(boxes.length) boxes[boxes.length-1].focus();
+      return;
+    }
+    if(hit.dataset.m==='delstage'){
+      keep();
+      stages.splice(+hit.dataset.i,1);
+      draw();
+      return;
+    }
+    if(hit.dataset.m==='addgear'){
+      keep();
+      gear.push({name:'',got:false});
+      draw();
+      const boxes=host().querySelectorAll('.en');
+      if(boxes.length) boxes[boxes.length-1].focus();
+      return;
+    }
+    if(hit.dataset.m==='delgear'){
+      keep();
+      gear.splice(+hit.dataset.i,1);
+      draw();
+      return;
+    }
+    if(hit.dataset.m!=='ok') return;
+    const job=readJob();
+    if(!job.name.trim()) return host().querySelector('#jn').focus();
+    const blank=job.stages.findIndex(s=>!s.name.trim()&&(s.started||s.finished));
+    if(blank>=0) return host().querySelectorAll('.sn')[blank].focus();
+    const kept=job.stages.filter(s=>s.name.trim()).map(s=>({id:'s'+(++seq), name:s.name.trim(), started:s.started, finished:s.finished}));
+    const equipment=job.gear.filter(g=>g.name.trim()).map(g=>({id:'e'+(++seq), name:g.name.trim(), got:!!g.got}));
+    if(!Array.isArray(S.jobs)) S.jobs=[];
+    S.jobs.push({id:'j'+(++seq), name:job.name.trim(), raisedBy:raised.slice(), doneBy:worker.slice(), description:job.description.trim(), started:job.started, finished:job.finished, links:[], stages:kept, equipment});
+    closeModal(); S.dirty=true; save(); render();
+  };
+  host().onkeydown=e=>{ if(e.key==='Escape') closeModal(); };
 }
 
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -533,7 +1134,7 @@ function renderList(){
         <span class="pill ${n?'hot':''}">${n} on list</span>
       </button>
       <div class="aisle-body">
-        ${ps.length?groupBySub(ps).map(g=>subhead(a,g)+g.items.map(productRow).join('')).join('')
+        ${ps.length?groupBySub(ps).map(g=>subhead(a,g)+g.items.map(p=>productRow(p)).join('')).join('')
                    :'<p class="empty">No products yet.</p>'}
         <div class="aisle-foot">
           <button class="btn" data-act="additem" data-a="${a.id}">+ Add item</button>
@@ -545,7 +1146,7 @@ function renderList(){
   }).join(''));
 
   document.getElementById('view').innerHTML = `
-    <div class="titlebar"><input id="title" value="${esc(S.title)}"></div>
+    <div class="titlebar" style="font-size:22px;font-weight:700">${esc(shoppingWeekTitle())}</div>
     <div class="search">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" placeholder="Search items, sub-categories or store codes…" value="${esc(S.query)}">
@@ -571,19 +1172,23 @@ function renderList(){
 }
 
 function shopRow(p, note){
-  return `<div class="row ${p.bought?'bought':''}">
-    <button class="tick" data-act="bought" data-p="${p.id}" style="${p.bought?'border-color:var(--green);background:var(--green);color:#fff':''}">\u2713</button>
-    <div class="row-main">
-      ${note?`<div class="crumb">${esc(note)}</div>`:''}
-      <div class="row-name">${esc(p.name)}${p.wantedBy&&p.wantedBy!==ME?`<span class="by">${esc(p.wantedBy)}</span>`:''}</div>
+  return `<div class="row item ${p.bought?'bought':''}">
+    <div class="topbit">
+      <button class="tick" data-act="bought" data-p="${p.id}" style="${p.bought?'border-color:var(--green);background:var(--green);color:#fff':''}">\u2713</button>
+      <div class="row-main">
+        ${note?`<div class="crumb">${esc(note)}</div>`:''}
+        <div class="row-name">${esc(p.name)}${p.wantedBy&&p.wantedBy!==ME?`<span class="by">${esc(p.wantedBy)}</span>`:''}</div>
+      </div>
+      <div class="row-acts"><button class="sq no" data-act="toggle" data-p="${p.id}" title="Take off list">\u2715</button></div>
+    </div>
+    <div class="lowbit">
+      <span class="starslot">${mealStar(p)}</span>
       <div class="chips">
         ${p.qty?`<span class="chip qty">${esc(p.qty)}</span>`:''}
         <span class="chip qty">Buy ${p.buy}</span>
-        ${storeBtn(p)}
-        ${aisleBtn(p)}
+        ${storeBits(p)}
       </div>
     </div>
-    <div class="row-acts"><button class="sq no" data-act="toggle" data-p="${p.id}" title="Take off list">\u2715</button></div>
   </div>`;
 }
 
@@ -644,9 +1249,10 @@ function shopByStore(){
 
 function renderShop(){
   const n=onListCount();
-  document.getElementById('view').innerHTML = n
-    ? shopToggle() + (S.shopView==='store' ? shopByStore() : shopAZ())
-    : '<p class="note">Nothing on the list yet. Tick items on the List tab.</p>';
+  const list=n?(shopToggle()+(S.shopView==='store'?shopByStore():shopAZ())):'';
+  document.getElementById('view').innerHTML =
+    `<div class="titlebar" style="font-size:22px;font-weight:700">${esc(shoppingWeekTitle())}</div>`
+    + (list || '<p class="note">Nothing on the list yet. Tick items on the List tab.</p>');
 }
 
 function renderHistory(){
@@ -662,9 +1268,351 @@ function renderHistory(){
     </section>`).join('') : '<p class="note">No shops saved yet.</p>';
 }
 
+function shoppingWeekStart(now){
+  const x=new Date(now||Date.now());
+  const dow=x.getDay();
+  const mins=x.getHours()*60+x.getMinutes();
+  let daysBack=(dow+6)%7;
+  if(dow===1 && mins<6*60) daysBack=7;
+  const start=new Date(x);
+  start.setDate(x.getDate()-daysBack);
+  start.setHours(6,0,0,0);
+  return start;
+}
+function shoppingMonday(){
+  const s=shoppingWeekStart();
+  s.setHours(12,0,0,0);
+  return s;
+}
+function shoppingWeekTitle(){
+  const d=shoppingMonday();
+  const p=n=>String(n).padStart(2,'0');
+  return 'Shop — Monday '+p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear();
+}
+function ensureWeekTitle(){
+  const t=shoppingWeekTitle();
+  if(S.title===t) return;
+  S.title=t;
+  save();
+}
+function scheduleWeekRoll(){
+  const next=shoppingWeekStart();
+  next.setDate(next.getDate()+7);
+  const wait=next-Date.now();
+  setTimeout(()=>{ NEXT_NEED=null; ensureWeekTitle(); render(); scheduleWeekRoll(); }, Math.max(1000, wait));
+}
+function mondayOf(d){
+  const x=new Date(d); x.setHours(12,0,0,0);
+  const day=x.getDay();
+  x.setDate(x.getDate()+(day===0?-6:1-day));
+  x.setHours(0,0,0,0);
+  return x;
+}
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function isoDate(d){
+  const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
+function menuWeekDays(){
+  const start=addDays(mondayOf(new Date()),7);
+  const names=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const out=[];
+  for(let w=0;w<2;w++){
+    names.forEach((name,i)=>{
+      const d=addDays(start, w*7+i);
+      out.push({name, date:isoDate(d), label:fmtDate(d), week:w?'Next Week':'This Week'});
+    });
+  }
+  return out;
+}
+function scheduleMenuRoll(){
+  const roll=addDays(mondayOf(new Date()),7);
+  const wait=roll-Date.now();
+  setTimeout(()=>{ NEXT_NEED=null; render(); scheduleMenuRoll(); }, Math.max(1000, wait));
+}
+function parseDay(s){
+  const [y,m,d]=String(s||'').split('-').map(Number);
+  return new Date(y,(m||1)-1,d||1,12,0,0,0);
+}
+function weekdayName(iso){
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][parseDay(iso).getDay()];
+}
+function mealDays(m){
+  if(Array.isArray(m.days)&&m.days.length) return [...new Set(m.days.map(Number))];
+  return [parseDay(m.date).getDay()];
+}
+function mealOnDay(m, iso){
+  if(!m||!m.date||!iso) return false;
+  const day=parseDay(iso);
+  if(!mealDays(m).includes(day.getDay())) return false;
+  const weeks=Math.round((mondayOf(day)-mondayOf(parseDay(m.date)))/(7*86400000));
+  if(weeks<0) return false;
+  const step={once:0,week:1,'2week':2,'3week':3,'4week':4}[m.repeat||'once'];
+  if(!step) return weeks===0;
+  return weeks%step===0;
+}
+function repeatChoices(){
+  return [
+    ['once','Just once'],
+    ['week','Every week'],
+    ['2week','Every 2 weeks'],
+    ['3week','Every 3 weeks'],
+    ['4week','Every 4 weeks']
+  ];
+}
+const DAY_BTNS=[['Mon',1],['Tue',2],['Wed',3],['Thu',4],['Fri',5],['Sat',6],['Sun',0]];
+function dateOnDow(iso, dow){
+  const d=parseDay(iso);
+  d.setDate(d.getDate()+(Number(dow)-d.getDay()));
+  return isoDate(d);
+}
+function dayButtons(selected, extra){
+  return `<div class="daybtns">${DAY_BTNS.map(([l,d])=>
+    `<button type="button" class="${Number(selected)===d?'on':''}" data-day="${d}" ${extra}>${l}</button>`
+  ).join('')}</div>`;
+}
+function dayButtonsMulti(selected, extra){
+  const set=new Set((selected||[]).map(Number));
+  return `<div class="daybtns">${DAY_BTNS.map(([l,d])=>
+    `<button type="button" class="${set.has(d)?'on':''}" data-day="${d}" ${extra}>${l}</button>`
+  ).join('')}</div>`;
+}
+function nextWeekDays(){
+  const start=addDays(shoppingMonday(),7);
+  const names=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  return names.map((name,i)=>{ const d=addDays(start,i); return {name, date:isoDate(d), label:fmtDate(d)}; });
+}
+let NEXT_NEED=null;
+function comingMealNeeds(){
+  if(NEXT_NEED) return NEXT_NEED;
+  const map=new Map();
+  const days=nextWeekDays();
+  (S.menu||[]).forEach(m=>{
+    if(!days.some(d=>mealOnDay(m,d.date))) return;
+    (m.items||[]).forEach(it=>{
+      const id=itemId(it);
+      const cur=map.get(id)||{n:0, meals:[], when:'next week'};
+      cur.n+=itemQty(it);
+      if(m.name&&!cur.meals.includes(m.name)) cur.meals.push(m.name);
+      map.set(id, cur);
+    });
+  });
+  NEXT_NEED=map;
+  return map;
+}
+function mealStar(p){
+  if(!p) return '';
+  const need=comingMealNeeds().get(p.id);
+  if(!need) return '';
+  const tip='On the meal menu'+(need.meals.length?' · '+need.meals.join(', '):'')+' · '+need.when+' · x '+need.n;
+  return `<span class="star" title="${esc(tip)}">\u2605</span>`;
+}
+function menuWeekCount(){
+  const days=menuWeekDays();
+  return (S.menu||[]).filter(m=>days.some(d=>mealOnDay(m,d.date))).length;
+}
+function itemId(it){ return it&&typeof it==='object'?it.id:it; }
+function itemQty(it){ const n=it&&typeof it==='object'?parseInt(it.n,10):1; return n>0?n:1; }
+function rememberChef(name){
+  const n=String(name||'').trim();
+  if(!n) return;
+  if(!Array.isArray(S.chefs)) S.chefs=[];
+  if(!S.chefs.some(c=>c.toLowerCase()===n.toLowerCase())) S.chefs.push(n);
+}
+function findProductByName(name){
+  const q=String(name||'').trim().toLowerCase();
+  if(!q) return null;
+  const all=allProducts();
+  return all.find(p=>p.name.toLowerCase()===q) || all.find(p=>p.name.toLowerCase().includes(q)) || null;
+}
+const MEAL_TYPES=['Breakfast','Lunch','Dinner','Snack'];
+let MENU_MSG='';
+function mealTypeSelect(m){
+  return `<select class="mtype" data-m="${m.id}" aria-label="Type of meal">
+    <option value="" ${m.type?'':'selected'}>Type</option>
+    ${MEAL_TYPES.map(t=>`<option value="${t}" ${m.type===t?'selected':''}>${t}</option>`).join('')}
+  </select>`;
+}
+function repeatSelect(m){
+  const cur=m.repeat||'once';
+  return `<select class="mrepeat" data-m="${m.id}" aria-label="How often">${
+    repeatChoices().map(([k,l])=>`<option value="${k}" ${cur===k?'selected':''}>${esc(l)}</option>`).join('')
+  }</select>`;
+}
+function repeatLabel(m){
+  const hit=repeatChoices().find(x=>x[0]===(m.repeat||'once'));
+  return hit?hit[1]:'Just once';
+}
+function daysLabel(m){
+  const set=new Set(mealDays(m));
+  return DAY_BTNS.filter(([,d])=>set.has(d)).map(([l])=>l).join(' ')||'No day';
+}
+function cloneMeal(m){ return JSON.parse(JSON.stringify(m)); }
+function ensureMenuEdit(){
+  if(!S.dayEdit) S.dayEdit={};
+  if(!S.mealDraft) S.mealDraft={};
+  if(!S.dayIds) S.dayIds={};
+}
+function flushMealCard(id){
+  const draft=S.mealDraft&&S.mealDraft[id];
+  const card=document.querySelector('.row.meal[data-mid="'+id+'"]');
+  if(!draft||!card||draft._deleted) return;
+  const name=card.querySelector('.mname');
+  const chef=card.querySelector('.mchef');
+  const type=card.querySelector('.mtype');
+  const ready=card.querySelector('.mready');
+  const repeat=card.querySelector('.mrepeat');
+  if(name) draft.name=name.value.trim();
+  if(chef) draft.chef=chef.value.trim();
+  if(type) draft.type=type.value;
+  if(ready) draft.ready=ready.value;
+  if(repeat) draft.repeat=repeat.value;
+}
+function mealsForDay(date){
+  ensureMenuEdit();
+  if(!S.dayEdit[date]) return (S.menu||[]).filter(m=>mealOnDay(m,date));
+  if(!S.dayIds[date]) S.dayIds[date]=[];
+  (S.menu||[]).filter(m=>mealOnDay(m,date)).forEach(m=>{
+    if(!S.dayIds[date].includes(m.id)){
+      S.dayIds[date].push(m.id);
+      if(!S.mealDraft[m.id]) S.mealDraft[m.id]=cloneMeal(m);
+    }
+  });
+  return S.dayIds[date].map(id=>S.mealDraft[id]).filter(m=>m&&!m._deleted);
+}
+function mealCard(m, editable){
+  const bits=(m.items||[]).map(it=>{
+    const id=itemId(it);
+    const [,p]=findP(id);
+    const x=editable?` <button data-act="deling" data-m="${m.id}" data-ing="${esc(id)}" style="border:0;background:none;color:var(--red);font-weight:700;padding:0 0 0 4px" title="Remove">\u2715</button>`:'';
+    return `<span class="chip">${esc(p?p.name:id)} x ${itemQty(it)}${x}</span>`;
+  }).join('');
+  if(!editable){
+    return `<div class="row meal locked">
+      <div class="row-main">
+        <div class="row-name">${esc(m.name)}</div>
+        <div class="meal-lock">${esc(m.chef||'No chef')} · ${esc(m.type||'No type')} · ${esc(m.ready||'No time')}</div>
+        <div class="meal-lock">${esc(daysLabel(m))} · ${esc(repeatLabel(m))}</div>
+        <div class="chips">${bits||'<span class="chip">No ingredients yet</span>'}</div>
+      </div>
+      <div class="row-acts">
+        <button class="sq ok" data-act="meallist" data-m="${m.id}" title="Put ingredients on the shopping list">\u2713</button>
+      </div>
+    </div>`;
+  }
+  return `<div class="row meal editing" data-mid="${esc(m.id)}">
+    <div class="meal-top">
+      <input class="mname" data-m="${esc(m.id)}" value="${esc(m.name||'')}" placeholder="Meal name" aria-label="Meal name">
+      <div class="row-acts">
+        <button class="sq ok" data-act="meallist" data-m="${esc(m.id)}" title="Put ingredients on the shopping list">\u2713</button>
+        <button class="sq no" data-act="delmeal" data-m="${esc(m.id)}" title="Delete meal">\u2715</button>
+      </div>
+    </div>
+    <div class="meal-meta">
+      <input class="mchef" data-m="${esc(m.id)}" list="cheflist" placeholder="Chef — first name" value="${esc(m.chef||'')}" aria-label="Chef first name">
+      ${mealTypeSelect(m)}
+      <input class="mready" data-m="${esc(m.id)}" type="time" value="${esc(m.ready||'')}" aria-label="Ready time">
+    </div>
+    <div class="when-bit">
+      <span class="when-lab">Days</span>
+      ${dayButtonsMulti(mealDays(m), `data-act="mealday" data-m="${esc(m.id)}"`)}
+    </div>
+    <div class="when-bit">
+      <span class="when-lab">How often</span>
+      ${repeatSelect(m)}
+    </div>
+    <div class="chips">${bits||'<span class="chip">No ingredients yet</span>'}</div>
+    <div class="meal-add">
+      <input class="mqty" data-m="${esc(m.id)}" type="number" min="1" value="1" aria-label="How many">
+      <input class="ming" data-m="${esc(m.id)}" list="menuitems" placeholder="Type an item from your list" value="">
+      <button class="btn go" data-act="adding" data-m="${esc(m.id)}">Add</button>
+    </div>
+  </div>`;
+}
+function addIngredient(mid, raw, qty){
+  ensureMenuEdit();
+  const draft=S.mealDraft[mid];
+  const m=draft||(S.menu||[]).find(x=>x.id===mid);
+  const p=findProductByName(raw);
+  if(!m||m._deleted||!p){ MENU_MSG='No matching item. Type a name from your house list.'; render(); return; }
+  if(!draft){ MENU_MSG='Click Edit on that day before changing the meal.'; render(); return; }
+  flushMealCard(mid);
+  if(!m.items) m.items=[];
+  const n=Math.max(1, parseInt(qty,10)||1);
+  m.items=m.items.filter(it=>itemId(it)!==p.id);
+  m.items.push({id:p.id, n});
+  MENU_MSG='';
+  render();
+}
+function putProductsOnList(items){
+  let n=0;
+  items.forEach(it=>{
+    const [,p]=findP(itemId(it));
+    if(!p||p.onList) return;
+    p.onList=true; p.wantedBy=ME; p.buy=itemQty(it); n++;
+  });
+  return n;
+}
+function mergeItems(items){
+  const map=new Map();
+  items.forEach(it=>{
+    const id=itemId(it);
+    map.set(id, (map.get(id)||0)+itemQty(it));
+  });
+  return [...map.entries()].map(([id,n])=>({id,n}));
+}
+function mealsThisWeek(){
+  const days=menuWeekDays().slice(0,7);
+  return (S.menu||[]).filter(m=>days.some(d=>mealOnDay(m,d.date)));
+}
+function renderMenu(){
+  if(!Array.isArray(S.menu)) S.menu=[];
+  const days=menuWeekDays();
+  document.getElementById('menuitems').innerHTML =
+    allProducts().map(p=>`<option value="${esc(p.name)}"></option>`).join('');
+  document.getElementById('cheflist').innerHTML =
+    (S.chefs||[]).map(c=>`<option value="${esc(c)}"></option>`).join('');
+  const msg=MENU_MSG; MENU_MSG='';
+  document.getElementById('view').innerHTML = `
+    <div class="titlebar" style="font-size:22px;font-weight:700">Menu Planner</div>
+    <div class="banner">
+      <span>This Week, ${esc(days[0].label)} to ${esc(days[6].label)}. Next Week, ${esc(days[7].label)} to ${esc(days[13].label)}. Changes at midnight on Sunday.</span>
+      <span class="sync" id="sync">${esc(SYNC)}</span>
+    </div>
+    ${msg?`<p class="note" style="padding:8px 4px 14px;text-align:left">${esc(msg)}</p>`:''}
+    <div class="toolbar">
+      ${(S.chefs||[]).map(c=>`<span class="chip">${esc(c)} <button data-act="delchef" data-chef="${esc(c)}" style="border:0;background:none;color:var(--red);font-weight:700;padding:0 0 0 4px" title="Remove chef">\u2715</button></span>`).join('')}
+      <button class="btn" data-act="addchef">+ Add chef</button>
+      <button class="btn btn-gold" data-act="addmeal">+ Add meal</button>
+    </div>
+    ${days.map((day,i)=>{
+      const order={Breakfast:0,Lunch:1,Dinner:2,Snack:3};
+      const open=!!(S.dayEdit&&S.dayEdit[day.date]);
+      const list=mealsForDay(day.date).slice().sort((a,b)=>
+        (order[a.type]??9)-(order[b.type]??9) || String(a.ready||'99').localeCompare(String(b.ready||'99')) || cmp(a.name,b.name));
+      const head=i===0||i===7?`<div class="weekhead">${esc(day.week)}</div>`:'';
+      return `${head}<section class="aisle" data-day="${day.date}">
+        <div class="aisle-head">
+          <span class="badge">${esc(day.name.charAt(0))}</span>
+          <span class="aisle-name">${esc(day.name)}</span>
+          <span class="pill">${esc(day.label)}</span>
+          <span class="pill ${list.length?'hot':''}">${list.length}</span>
+        </div>
+        ${list.length?list.map(m=>mealCard(m, open)).join(''):'<p class="empty">Nothing planned.</p>'}
+        <div class="aisle-foot menu-foot">
+          <button class="btn" data-act="addmeal" data-date="${day.date}">+ Add meal</button>
+          <span class="dayacts">
+            <button class="btn ${open?'on':''}" data-act="dayedit" data-date="${day.date}" ${open?'disabled':''}>Edit</button>
+            <button class="btn btn-solid" data-act="daysave" data-date="${day.date}" ${open?'':'disabled'}>Save</button>
+          </span>
+        </div>
+      </section>`;
+    }).join('')}`;
+}
+
 function renderBar(){
   const bar=document.getElementById('bar');
-  if(S.tab==='history'){ bar.hidden=true; return; }
+  if(S.tool!=='list'||S.tab==='history'){ bar.hidden=true; return; }
   bar.hidden=false;
   const n=onListCount(), b=boughtCount();
   bar.innerHTML = `<span class="status">${S.dirty?'<b>Unsaved changes</b> · ':''}${n} on list, ${b} purchased</span>
@@ -673,8 +1621,14 @@ function renderBar(){
 
 function render(){
   const y=window.scrollY;
-  renderTabs();
-  S.tab==='list'?renderList():S.tab==='shop'?renderShop():renderHistory();
+  NEXT_NEED=null;
+  ensureWeekTitle();
+  renderTop();
+  if(S.tool==='menu') renderMenu();
+  else if(S.tool==='jobs') renderJobs();
+  else if(S.tab==='shop') renderShop();
+  else if(S.tab==='history') renderHistory();
+  else renderList();
   renderBar();
   window.scrollTo(0,y);
 }
@@ -706,6 +1660,68 @@ function modal(title, fields, onOk, okLabel){
     if(e.key==='Escape') closeModal();
     if(e.key==='Enter') host().querySelector('[data-m="ok"]').click();
   };
+}
+
+function editStore(p, code){
+  const s=(p.stores||[]).find(x=>x.code===code);
+  if(!s) return;
+  const name=(DATA.stores.find(x=>x.code===code)||{}).name||code;
+  host().innerHTML=`<div class="scrim"><div class="modal">
+    <h2>${esc(code)} · ${esc(name)}</h2>
+    <div class="body">
+      <label>Aisle at ${esc(code)} <span>(optional)</span></label>
+      <input id="f0" placeholder="e.g. 7, Fridge, Deli" value="${esc(aisleSet(s)?s.aisle:'')}">
+      <p class="hint">Leave this blank if you do not know the aisle yet.</p>
+    </div>
+    <div class="acts">
+      <button class="btn btn-danger" data-m="remove">Remove store</button>
+      <button class="btn" data-m="cancel">Cancel</button>
+      <button class="btn go" data-m="ok">Save</button>
+    </div></div></div>`;
+  const input=host().querySelector('#f0');
+  input.focus();
+  host().onclick=e=>{
+    e.stopPropagation();
+    if(e.target.classList.contains('scrim')||e.target.dataset.m==='cancel') return closeModal();
+    if(e.target.dataset.m==='remove'){
+      p.stores=p.stores.filter(x=>x.code!==code);
+      closeModal(); S.dirty=true; save(); render();
+      return;
+    }
+    if(e.target.dataset.m==='ok'){
+      s.aisle=input.value.trim();
+      if(s.aisle.toLowerCase()==='unknown') s.aisle='';
+      closeModal(); S.dirty=true; save(); render();
+    }
+  };
+  host().onkeydown=e=>{
+    if(e.key==='Escape') closeModal();
+    if(e.key==='Enter') host().querySelector('[data-m="ok"]').click();
+  };
+}
+
+function addStorePicker(p){
+  const have=new Set((p.stores||[]).map(s=>s.code));
+  const choices=DATA.stores.filter(s=>!have.has(s.code));
+  host().innerHTML=`<div class="scrim"><div class="modal">
+    <h2>Add store · ${esc(p.name)}</h2>
+    <div class="body">
+      ${choices.length?`<div class="storepick">${choices.map(s=>
+        `<button class="store" data-code="${esc(s.code)}"><span class="code">${esc(s.code)}</span>${esc(s.name)}</button>`
+      ).join('')}</div>`:'<p class="hint">Every store code is already on this item.</p>'}
+    </div>
+    <div class="acts"><button class="btn" data-m="cancel">Cancel</button></div>
+  </div></div>`;
+  host().onclick=e=>{
+    if(e.target.classList.contains('scrim')||e.target.dataset.m==='cancel') return closeModal();
+    const btn=e.target.closest('[data-code]');
+    if(!btn) return;
+    if(!p.stores) p.stores=[];
+    p.stores.push({code:btn.dataset.code, aisle:''});
+    p.stores.sort((a,b)=>cmp(a.code,b.code));
+    closeModal(); S.dirty=true; save(); render();
+  };
+  host().onkeydown=e=>{ if(e.key==='Escape') closeModal(); };
 }
 
 function storeModal(p){
@@ -798,8 +1814,11 @@ function askName(force){
 function findP(id){ for(const a of S.aisles){ const p=a.products.find(x=>x.id===id); if(p) return [a,p]; } return [null,null]; }
 
 document.addEventListener('click', e=>{
+  if(e.target.closest('#modalHost')) return;
+  const tool=e.target.closest('[data-tool]');
+  if(tool){ S.tool=tool.dataset.tool; render(); return; }
   const tb=e.target.closest('[data-tab]');
-  if(tb){ S.tab=tb.dataset.tab; render(); return; }
+  if(tb){ S.tool='list'; S.tab=tb.dataset.tab; render(); return; }
   const el=e.target.closest('[data-act]');
   if(!el) return;
   const act=el.dataset.act;
@@ -815,6 +1834,8 @@ document.addEventListener('click', e=>{
     case 'buy+': p.buy++; break;
     case 'buy-': p.buy=Math.max(1,p.buy-1); break;
     case 'stores': storeModal(p); return;
+    case 'addstore': addStorePicker(p); return;
+    case 'aisle': editStore(p, el.dataset.code); return;
     case 'refexp': S.refCats[el.dataset.a]=!S.refCats[el.dataset.a]; renderList(); return;
     case 'jump': {
       const aid = el.dataset.a || el.dataset.cat;
@@ -872,10 +1893,257 @@ document.addEventListener('click', e=>{
         .map(x=>({name:x.name, buy:x.buy, bought:x.bought, stores:storeText(x)}));
       S.history.unshift({title:S.title, items, bought:items.filter(i=>i.bought).length, open:false});
       allProducts().forEach(x=>{x.onList=false;x.bought=false});
-      S.title='Shop — '+fmtDate(new Date());
+      S.title=shoppingWeekTitle();
       S.dirty=false; S.tab='history'; save(); render(); return;
     }
     case 'fold-h': S.history[+el.dataset.i].open=!S.history[+el.dataset.i].open; render(); return;
+    case 'addchef':
+      modal('Add chef', [{label:'First name', ph:'e.g. Scott'}], v=>{
+        rememberChef(v[0]); save(); render();
+      });
+      return;
+    case 'delchef':
+      S.chefs=(S.chefs||[]).filter(c=>c!==el.dataset.chef);
+      save(); render(); return;
+    case 'mealday': {
+      ensureMenuEdit();
+      const draft=S.mealDraft[el.dataset.m];
+      if(!draft) return;
+      flushMealCard(draft.id);
+      const days=mealDays(draft);
+      const d=+el.dataset.day;
+      const at=days.indexOf(d);
+      if(at>=0){ if(days.length===1) return; days.splice(at,1); }
+      else days.push(d);
+      draft.days=days;
+      draft.date=dateOnDow(draft.date, days[0]);
+      render(); return;
+    }
+    case 'dayedit': {
+      ensureMenuEdit();
+      const date=el.dataset.date;
+      const meals=(S.menu||[]).filter(m=>mealOnDay(m,date));
+      S.dayEdit[date]=true;
+      S.dayIds[date]=meals.map(m=>m.id);
+      meals.forEach(m=>{ S.mealDraft[m.id]=cloneMeal(m); });
+      render(); return;
+    }
+    case 'daysave': {
+      ensureMenuEdit();
+      const date=el.dataset.date;
+      const ids=S.dayIds[date]||[];
+      ids.forEach(id=>flushMealCard(id));
+      const blank=ids.map(id=>S.mealDraft[id]).find(d=>d&&!d._deleted&&!String(d.name||'').trim());
+      if(blank){ MENU_MSG='Each meal needs a name before you save.'; render(); return; }
+      if(!Array.isArray(S.menu)) S.menu=[];
+      ids.forEach(id=>{
+        const draft=S.mealDraft[id];
+        if(!draft) return;
+        const at=S.menu.findIndex(m=>m.id===id);
+        if(draft._deleted){ if(at>=0) S.menu.splice(at,1); }
+        else {
+          delete draft._deleted;
+          rememberChef(draft.chef);
+          if(!draft.days||!draft.days.length) draft.days=mealDays(draft);
+          draft.date=dateOnDow(draft.date, draft.days[0]);
+          if(at>=0) S.menu[at]=draft;
+          else S.menu.push(draft);
+        }
+        delete S.mealDraft[id];
+      });
+      delete S.dayEdit[date];
+      delete S.dayIds[date];
+      save(); render(); return;
+    }
+    case 'addmeal': {
+      const today=isoDate(new Date());
+      const days=menuWeekDays();
+      const date=el.dataset.date || (days.some(d=>d.date===today)?today:days[0].date);
+      const day=days.find(d=>d.date===date);
+      mealModal(date, day?day.name:date);
+      return;
+    }
+    case 'adding': {
+      const box=el.parentElement;
+      const inp=box.querySelector('.ming');
+      const qty=box.querySelector('.mqty');
+      addIngredient(el.dataset.m, inp?inp.value:'', qty?qty.value:'1');
+      return;
+    }
+    case 'deling': {
+      ensureMenuEdit();
+      const draft=S.mealDraft[el.dataset.m];
+      if(!draft) return;
+      flushMealCard(draft.id);
+      draft.items=(draft.items||[]).filter(it=>itemId(it)!==el.dataset.ing);
+      render(); return;
+    }
+    case 'delmeal':
+      ensureMenuEdit();
+      if(S.mealDraft[el.dataset.m]){
+        if(!confirm('Delete this meal? It is removed when you click Save.')) return;
+        S.mealDraft[el.dataset.m]._deleted=true;
+        render(); return;
+      }
+      return;
+    case 'meallist': {
+      const m=(S.menu||[]).find(x=>x.id===el.dataset.m);
+      const ids=m?(m.items||[]):[];
+      if(!ids.length){ MENU_MSG='That meal has no ingredients yet.'; render(); return; }
+      putProductsOnList(ids);
+      S.dirty=true; save(); S.tool='list'; S.tab='shop'; render(); return;
+    }
+    case 'weeklist': {
+      const ids=mergeItems(mealsThisWeek().flatMap(m=>m.items||[]));
+      if(!ids.length){ MENU_MSG='Add ingredients to a meal first.'; render(); return; }
+      putProductsOnList(ids);
+      S.dirty=true; save(); S.tool='list'; S.tab='shop'; render(); return;
+    }
+    case 'addjob': jobModal(); return;
+    case 'addstage': {
+      ensureJobEdit();
+      const draft=S.jobDraft&&S.jobDraft[el.dataset.j];
+      if(!draft) return;
+      flushJobCard(draft.id);
+      if(!Array.isArray(draft.stages)) draft.stages=[];
+      draft.stages.push({id:'s'+(++seq), name:'', started:'', finished:''});
+      render(); return;
+    }
+    case 'delstage': {
+      ensureJobEdit();
+      const draft=S.jobDraft&&S.jobDraft[el.dataset.j];
+      if(!draft) return;
+      flushJobCard(draft.id);
+      draft.stages=(draft.stages||[]).filter(s=>s.id!==el.dataset.s);
+      render(); return;
+    }
+    case 'addalloc':
+      modal('Add Job Allocator', [{label:'First name', ph:'e.g. Scott'}], v=>{
+        rememberRole('allocators', v[0]); save(); render();
+      });
+      return;
+    case 'addwork':
+      modal('Add Job Worker', [{label:'First name', ph:'e.g. Johnny'}], v=>{
+        rememberRole('workers', v[0]); save(); render();
+      });
+      return;
+    case 'delalloc':
+      S.allocators=(S.allocators||[]).filter(n=>n!==el.dataset.name);
+      break;
+    case 'delwork':
+      S.workers=(S.workers||[]).filter(n=>n!==el.dataset.name);
+      break;
+    case 'pickalloc':
+    case 'pickwork': {
+      ensureJobEdit();
+      const draft=S.jobDraft&&S.jobDraft[el.dataset.j];
+      if(!draft) return;
+      flushJobCard(draft.id);
+      const key=act==='pickalloc'?'raisedBy':'doneBy';
+      draft[key]=toggleName(draft[key], el.dataset.name);
+      render(); return;
+    }
+    case 'jobview': S.jobView=el.dataset.view||'list'; render(); return;
+    case 'jobundo': {
+      ensureJobEdit();
+      const draft=S.jobDraft&&S.jobDraft[el.dataset.j];
+      if(!draft) return;
+      draft._deleted=false;
+      render(); return;
+    }
+    case 'jobedit': {
+      ensureJobEdit();
+      const j=(S.jobs||[]).find(x=>x.id===el.dataset.j);
+      if(!j) return;
+      const draft=cloneMeal(j);
+      if(!Array.isArray(draft.equipment)) draft.equipment=[];
+      if(!Array.isArray(draft.stages)) draft.stages=[];
+      if(!Array.isArray(draft.links)) draft.links=[];
+      S.jobEdit[j.id]=true;
+      S.jobDraft[j.id]=draft;
+      render(); return;
+    }
+    case 'jobsave': {
+      ensureJobEdit();
+      const id=el.dataset.j;
+      flushJobCard(id);
+      const draft=S.jobDraft[id];
+      if(!draft) return;
+      if(!draft._deleted && !String(draft.name||'').trim()){
+        JOB_MSG='The job needs a name before you save.';
+        render(); return;
+      }
+      const bad=(draft.stages||[]).find(s=>!String(s.name||'').trim()&&(s.started||s.finished));
+      if(bad){ JOB_MSG='Each stage needs a name before you save.'; render(); return; }
+      draft.stages=(draft.stages||[]).filter(s=>String(s.name||'').trim());
+      draft.equipment=(draft.equipment||[]).filter(g=>String(g.name||'').trim());
+      if(!Array.isArray(S.jobs)) S.jobs=[];
+      const at=S.jobs.findIndex(j=>j.id===id);
+      if(draft._deleted){ if(at>=0) S.jobs.splice(at,1); }
+      else {
+        delete draft._deleted;
+        nameList(draft.raisedBy).forEach(n=>rememberRole('allocators', n));
+        nameList(draft.doneBy).forEach(n=>rememberRole('workers', n));
+        if(at>=0) S.jobs[at]=draft;
+        else S.jobs.push(draft);
+      }
+      delete S.jobDraft[id];
+      delete S.jobEdit[id];
+      save(); render(); return;
+    }
+    case 'addequip': {
+      ensureJobEdit();
+      const draft=S.jobDraft&&S.jobDraft[el.dataset.j];
+      if(!draft) return;
+      flushJobCard(draft.id);
+      if(!Array.isArray(draft.equipment)) draft.equipment=[];
+      draft.equipment.push({id:'e'+(++seq), name:'', got:false});
+      render();
+      requestAnimationFrame(()=>{
+        const boxes=document.querySelectorAll('.row.job[data-jid="'+draft.id+'"] .ename');
+        if(boxes.length) boxes[boxes.length-1].focus();
+      });
+      return;
+    }
+    case 'delequip': {
+      ensureJobEdit();
+      const draft=S.jobDraft&&S.jobDraft[el.dataset.j];
+      if(!draft) return;
+      flushJobCard(draft.id);
+      draft.equipment=(draft.equipment||[]).filter(g=>g.id!==el.dataset.e);
+      render(); return;
+    }
+    case 'gotgear': {
+      ensureJobEdit();
+      const draft=S.jobDraft&&S.jobDraft[el.dataset.j];
+      if(!draft) return;
+      flushJobCard(draft.id);
+      const g=(draft.equipment||[]).find(x=>x.id===el.dataset.e);
+      if(g) g.got=!g.got;
+      render(); return;
+    }
+    case 'deljob':
+      ensureJobEdit();
+      if(S.jobDraft[el.dataset.j]){
+        if(!confirm('Delete this job? It is removed when you click Save.')) return;
+        S.jobDraft[el.dataset.j]._deleted=true;
+        render(); return;
+      }
+      return;
+    case 'delplink': {
+      ensureJobEdit();
+      const draft=S.jobDraft&&S.jobDraft[el.dataset.j];
+      if(!draft) return;
+      flushJobCard(draft.id);
+      draft.links=(draft.links||[]).filter(it=>itemId(it)!==el.dataset.ing);
+      render(); return;
+    }
+    case 'addplink': {
+      const box=el.parentElement;
+      const inp=box.querySelector('.jplink');
+      addProductLink(el.dataset.j, inp?inp.value:'');
+      return;
+    }
   }
   if(touched) S.dirty=true;
   save(); render();
@@ -885,6 +2153,122 @@ document.addEventListener('toggle', e=>{
   if(e.target.id==='refbox') S.refOpen = e.target.open;
 }, true);
 
+document.addEventListener('change', e=>{
+  const el=e.target;
+  if(!el.classList) return;
+  const draft=S.jobDraft&&S.jobDraft[el.dataset.j];
+  if(el.dataset.j){
+    if(!draft||draft._deleted) return;
+    const stage=el.dataset.s?(draft.stages||[]).find(s=>s.id===el.dataset.s):null;
+    if(stage){
+      if(el.classList.contains('sname')) stage.name=el.value.trim();
+      else if(el.classList.contains('sstart')) stage.started=el.value;
+      else if(el.classList.contains('sfin')) stage.finished=el.value;
+    }else if(el.classList.contains('jname')) draft.name=el.value.trim();
+    else if(el.classList.contains('jdesc')) draft.description=el.value.trim();
+    else if(el.classList.contains('jstart')) draft.started=el.value;
+    else if(el.classList.contains('jfinish')) draft.finished=el.value;
+    else if(el.classList.contains('ename')){
+      const g=(draft.equipment||[]).find(x=>x.id===el.dataset.e);
+      if(g) g.name=el.value.trim();
+    }
+    return;
+  }
+  const m=(S.mealDraft&&S.mealDraft[el.dataset.m])||(S.menu||[]).find(x=>x.id===el.dataset.m);
+  if(!m||!S.mealDraft||!S.mealDraft[el.dataset.m]) return;
+  if(el.classList.contains('mname')) m.name=el.value.trim();
+  else if(el.classList.contains('mchef')) m.chef=el.value.trim();
+  else if(el.classList.contains('mtype')) m.type=el.value;
+  else if(el.classList.contains('mready')) m.ready=el.value;
+  else if(el.classList.contains('mrepeat')) m.repeat=el.value;
+  else return;
+});
+
+function mealModal(date, dayName){
+  const startDow=parseDay(date).getDay();
+  let rows=[{name:'',chef:'',type:'Dinner',ready:'',repeat:'once',days:[startDow]}];
+  const read=()=>[...host().querySelectorAll('.mblock')].map(b=>({
+    name:b.querySelector('.mn').value.trim(),
+    chef:b.querySelector('.mc').value.trim(),
+    type:b.querySelector('.mt').value,
+    ready:b.querySelector('.mr').value,
+    repeat:b.querySelector('.mp').value,
+    days:[...b.querySelectorAll('.daybtns button.on')].map(btn=>+btn.dataset.day)
+  }));
+  const draw=()=>{
+    host().innerHTML=`<div class="scrim"><div class="modal">
+      <h2>Add meal</h2>
+      <div class="body">
+        ${rows.map((r,i)=>`<div class="mblock">
+          <div class="mhead"><span>Meal ${i+1}</span>${rows.length>1?`<button class="btn" data-m="delrow" data-i="${i}">Remove</button>`:''}</div>
+          <label>Meal</label>
+          <input class="mn" placeholder="e.g. Roast chicken" value="${esc(r.name)}">
+          <label>Chef <span>(first name)</span></label>
+          <input class="mc" list="cheflist" placeholder="e.g. Scott" value="${esc(r.chef)}">
+          <label>Type</label>
+          <select class="mt">${MEAL_TYPES.map(t=>`<option ${r.type===t?'selected':''}>${t}</option>`).join('')}</select>
+          <label>Ready time <span>(optional)</span></label>
+          <input class="mr" type="time" value="${esc(r.ready)}">
+          <label>Days <span>(pick one or more)</span></label>
+          ${dayButtonsMulti(r.days, `data-m="setday" data-i="${i}"`)}
+          <label>How often</label>
+          <select class="mp">${repeatChoices().map(([k,l])=>`<option value="${k}" ${(r.repeat||'once')===k?'selected':''}>${esc(l)}</option>`).join('')}</select>
+        </div>`).join('')}
+        <button class="btn" data-m="addrow">+ Another meal</button>
+      </div>
+      <div class="acts">
+        <button class="btn" data-m="cancel">Cancel</button>
+        <button class="btn go" data-m="ok">Add</button>
+      </div></div></div>`;
+    const first=host().querySelector('.mn');
+    if(first) first.focus();
+  };
+  draw();
+  host().onclick=e=>{
+    const hit=e.target.closest('[data-m]');
+    if(e.target.classList.contains('scrim')||(hit&&hit.dataset.m==='cancel')) return closeModal();
+    if(!hit) return;
+    if(hit.dataset.m==='addrow'){
+      rows=read();
+      rows.push({name:'',chef:'',type:'Dinner',ready:'',repeat:'once',days:[startDow]});
+      draw();
+      const boxes=host().querySelectorAll('.mn');
+      if(boxes.length) boxes[boxes.length-1].focus();
+      return;
+    }
+    if(hit.dataset.m==='setday'){
+      rows=read();
+      const row=rows[+hit.dataset.i];
+      const d=+hit.dataset.day;
+      const at=row.days.indexOf(d);
+      if(at>=0) row.days.splice(at,1);
+      else row.days.push(d);
+      draw();
+      return;
+    }
+    if(hit.dataset.m==='delrow'){
+      rows=read();
+      rows.splice(+hit.dataset.i,1);
+      draw();
+      return;
+    }
+    if(hit.dataset.m==='ok'){
+      rows=read().filter(r=>r.name||r.chef||r.ready);
+      if(!rows.length) return host().querySelector('.mn').focus();
+      const bad=rows.findIndex(r=>!r.name);
+      if(bad>=0) return host().querySelectorAll('.mn')[bad].focus();
+      const noday=rows.findIndex(r=>!r.days.length);
+      if(noday>=0) return;
+      if(!Array.isArray(S.menu)) S.menu=[];
+      rows.forEach(r=>{
+        rememberChef(r.chef);
+        S.menu.push({id:'m'+(++seq), date:dateOnDow(date, r.days[0]), days:r.days.slice(), name:r.name, chef:r.chef, type:r.type||'Dinner', ready:r.ready, repeat:r.repeat||'once', items:[]});
+      });
+      closeModal(); save(); render();
+    }
+  };
+}
+
 document.addEventListener('input', e=>{
   if(e.target.id==='q'){
     S.query=e.target.value; S.limit=50; renderList();
@@ -893,11 +2277,27 @@ document.addEventListener('input', e=>{
   if(e.target.id==='title'){ S.title=e.target.value; S.dirty=true; save(); renderBar(); }
 });
 
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Enter' || !e.target.classList) return;
+  if(e.target.classList.contains('ming')){
+    e.preventDefault();
+    const box=e.target.parentElement;
+    const qty=box.querySelector('.mqty');
+    addIngredient(e.target.dataset.m, e.target.value, qty?qty.value:'1');
+  }
+  if(e.target.classList.contains('jplink')){
+    e.preventDefault();
+    addProductLink(e.target.dataset.j, e.target.value);
+  }
+});
+
 /* ---------- boot ---------- */
 (async function(){
   document.getElementById('storecodes').innerHTML =
     DATA.stores.map(s=>`<option value="${esc(s.code)}">${esc(s.name)}</option>`).join('');
   try{ ME = localStorage.getItem('houselist:me') || ''; }catch(e){ ME=''; }
+  scheduleWeekRoll();
+  scheduleMenuRoll();
 
   if(!SB){
     setSync('Not connected — add your Supabase anon key in the file');
@@ -915,6 +2315,12 @@ document.addEventListener('input', e=>{
       REV = data.rev || 0;
       S.title = d.title || S.title;
       S.history = d.history || [];
+      if(Array.isArray(d.menu)) S.menu = d.menu;
+      if(Array.isArray(d.chefs)) S.chefs = d.chefs;
+      if(Array.isArray(d.jobs)) S.jobs = d.jobs;
+      if(Array.isArray(d.people)) S.people = d.people;
+  if(Array.isArray(d.workers)) S.workers = d.workers;
+  if(Array.isArray(d.allocators)) S.allocators = d.allocators;
       S.log = d.log || [];
       if(S.log.length) seenAt = S.log[0].t;
       S.aisles = d.aisles;
@@ -922,7 +2328,7 @@ document.addEventListener('input', e=>{
     }else{
       REV = 1;
       await SB.from('house_list').upsert({ id:ROW_ID, rev:1, updated_by:ME||'Someone',
-        data:{ title:S.title, aisles:S.aisles, history:S.history, log:S.log } });
+        data:{ title:S.title, aisles:S.aisles, history:S.history, log:S.log, menu:S.menu||[], chefs:S.chefs||[], jobs:S.jobs||[], people:S.people||[], workers:S.workers||[], allocators:S.allocators||[] } });
       setSync('Shared list created');
     }
   }catch(e){
@@ -930,6 +2336,7 @@ document.addEventListener('input', e=>{
   }
 
   normalise();
+  if(repairMealIds()) save();
   render();
   if(!ME) askName(false);
 
