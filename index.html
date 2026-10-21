@@ -1227,15 +1227,17 @@ function setWorkerPhone(name, raw){
 function smsDigits(mobile){
   return String(mobile||'').replace(/[^\d+]/g,'');
 }
-const APP_LINK = 'https://skoddy01.github.io/house-shopping/';
+const APP_LINK = 'https://skoddy01.github.io/house-shopping/TheHomeManager.html';
 function appPublicUrl(){
   const loc=window.location||{};
   const host=String(loc.hostname||'');
   const http=/^https?:$/i.test(loc.protocol||'');
   const local=!host || host==='localhost' || host==='127.0.0.1';
   if(http && !local){
-    const path=String(loc.pathname||'/').replace(/index\.html$/i,'');
-    return (loc.origin+path).replace(/\/?$/,'/');
+    let path=String(loc.pathname||'/');
+    if(/\/index\.html$/i.test(path) || /\/$/.test(path))
+      return loc.origin+path.replace(/index\.html$/i,'').replace(/\/?$/,'/')+'TheHomeManager.html';
+    return loc.origin+path;
   }
   return APP_LINK;
 }
