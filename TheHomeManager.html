@@ -2268,6 +2268,7 @@ function renderList(){
     <div class="toolbar">
       <button class="btn btn-gold" data-act="quickadd">+ Quick add to list</button>
       <button class="btn" data-act="clear">Clear selections</button>
+      <button class="btn btn-gold" data-act="savehist" type="button">${onListCount()?'Save to History':'Open History'}</button>
       <button class="btn btn-black rhs ${S.catsOpen&&!S.allItems&&!S.focus?'on':''}" data-act="allcats">${S.focus||S.allItems?'\u2190 All categories':(S.catsOpen?'\u2715 Close categories':'All categories')}</button>
       <button class="btn btn-solid rhs2 ${S.allItems?'act':''}" data-act="openall">${S.allItems&&S.openAllCats?'\u2715 Close all':'Open all'}</button>
     </div>
@@ -2887,8 +2888,7 @@ function renderBar(){
   if(S.tool!=='list'||S.tab==='history'){ bar.hidden=true; return; }
   bar.hidden=false;
   const n=onListCount(), b=boughtCount();
-  bar.innerHTML = `<span class="status">${S.dirty?'<b>Unsaved changes</b> · ':''}${n} on list, ${b} purchased</span>
-    <button class="save" data-act="savehist" type="button">${n?'Save to History':'Open History'}</button>`;
+  bar.innerHTML = `<span class="status">${S.dirty?'<b>Unsaved changes</b> · ':''}${n} on list, ${b} purchased</span>`;
 }
 
 function render(){
