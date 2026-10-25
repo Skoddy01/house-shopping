@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#143c2b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
-<title>The Home Manager</title>
+<title>The Home Manager V1.0</title>
 <style>
   :root{
     --green:#143c2b; --green-2:#1c5138; --green-txt:#20573d;
@@ -490,7 +490,7 @@
 </div>
 
 <header class="top" id="top">
-  <button class="appname" data-tool="home" type="button">The Home Manager</button>
+  <button class="appname" data-tool="home" type="button">The Home Manager V1.0</button>
   <nav class="tools" id="tools"></nav>
   <nav class="tabs" id="tabs"></nav>
 </header>
@@ -1045,7 +1045,7 @@ function renderHome(){
   document.getElementById('view').innerHTML = `
     <div class="home">
       <div class="home-logo"><img src="icon-180.png" alt="The Home Manager" onerror="this.onerror=null;this.src='logo.png'"></div>
-      <h1>The Home Manager</h1>
+      <h1>The Home Manager V${APP_VER}</h1>
       <p>What to do next?</p>
       <div class="home-pick">
         <button class="btn btn-solid" data-tool="list">Shopping List</button>
@@ -1227,7 +1227,15 @@ function setWorkerPhone(name, raw){
 function smsDigits(mobile){
   return String(mobile||'').replace(/[^\d+]/g,'');
 }
-const APP_LINK = 'https://skoddy01.github.io/house-shopping/TheHomeManager.html';
+const APP_VER = '1.0';
+function appFileName(){ return 'TheHomeManager-V'+APP_VER+'.html'; }
+const APP_LINK = 'https://skoddy01.github.io/house-shopping/'+appFileName();
+function showAppVer(){
+  const t='The Home Manager V'+APP_VER;
+  document.title=t;
+  const b=document.querySelector('.appname');
+  if(b) b.textContent=t;
+}
 function appPublicUrl(){
   const loc=window.location||{};
   const host=String(loc.hostname||'');
@@ -1235,9 +1243,9 @@ function appPublicUrl(){
   const local=!host || host==='localhost' || host==='127.0.0.1';
   if(http && !local){
     let path=String(loc.pathname||'/');
-    if(/\/index\.html$/i.test(path) || /\/$/.test(path))
-      return loc.origin+path.replace(/index\.html$/i,'').replace(/\/?$/,'/')+'TheHomeManager.html';
-    return loc.origin+path;
+    if(/TheHomeManager-V[\d.]+\.html$/i.test(path)) return loc.origin+path;
+    const dir=path.replace(/index\.html$/i,'').replace(/TheHomeManager\.html$/i,'').replace(/\/?$/,'/');
+    return loc.origin+dir+appFileName();
   }
   return APP_LINK;
 }
@@ -2896,6 +2904,7 @@ function render(){
   NEXT_NEED=null;
   fillStoreCodes();
   ensureWeekTitle();
+  showAppVer();
   renderTop();
   if(S.tool==='home') renderHome();
   else if(S.tool==='menu') renderMenu();
