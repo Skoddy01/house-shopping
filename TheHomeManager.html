@@ -6,11 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="THM V1.0">
+<meta name="apple-mobile-web-app-title" content="THM V1.1">
 <meta name="theme-color" content="#143c2b">
-<link rel="manifest" href="manifest.webmanifest?v=1.0">
-<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=1.0">
-<title>The Home Manager V1.0</title>
+<link rel="manifest" href="manifest.webmanifest?v=1.1">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=1.1">
+<title>The Home Manager V1.1</title>
 <style>
   :root{
     --green:#143c2b; --green-2:#1c5138; --green-txt:#20573d;
@@ -338,6 +338,7 @@
   .worker-card{padding:22px 20px 20px}
   .worker-card > .row-name{font-size:20px;margin-bottom:14px;font-weight:800;color:#1e1e1a}
   .worker-card .when-lab{font-weight:800;color:#1e1e1a;font-size:15px}
+  .worker-card .weekhead{margin:16px 0 2px;padding:12px 2px 4px;font-size:18px}
   .alloc-job{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
   .alloc-job:first-of-type{border-top:0;padding-top:0}
   .alloc-job .row-name{font-size:16px;margin:0 0 4px;font-weight:800;color:#1e1e1a}
@@ -481,16 +482,16 @@
       <li>Scroll the list down. Do not swipe the coloured app icons.</li>
       <li>Tap Add to Home Screen.</li>
       <li>If you cannot see it, tap Edit Actions at the bottom of that list, turn Add to Home Screen on, then tap it.</li>
-      <li>Check the name says The Home Manager.</li>
+      <li>Check the name says THM V1.1.</li>
       <li>Tap Add at the top right.</li>
-      <li>Leave Safari. Tap the new The Home Manager icon.</li>
+      <li>Leave Safari. Tap the new THM V1.1 icon. It has a yellow V1 on the house.</li>
     </ol>
     <button class="go" id="addhomeok" type="button">I have added it</button>
   </div>
 </div>
 
 <header class="top" id="top">
-  <button class="appname" data-tool="home" type="button">The Home Manager V1.0</button>
+  <button class="appname" data-tool="home" type="button">The Home Manager V1.1</button>
   <nav class="tools" id="tools"></nav>
   <nav class="tabs" id="tabs"></nav>
 </header>
@@ -1044,7 +1045,7 @@ function renderHome(){
   closeModal();
   document.getElementById('view').innerHTML = `
     <div class="home">
-      <div class="home-logo"><img src="icon-180.png?v=1.0" alt="The Home Manager V1.0" onerror="this.onerror=null;this.src='logo.png'"></div>
+      <div class="home-logo"><img src="icon-180.png?v=1.1" alt="The Home Manager V1.1" onerror="this.onerror=null;this.src='logo.png'"></div>
       <h1>The Home Manager V${APP_VER}</h1>
       <p>What to do next?</p>
       <div class="home-pick">
@@ -1227,7 +1228,7 @@ function setWorkerPhone(name, raw){
 function smsDigits(mobile){
   return String(mobile||'').replace(/[^\d+]/g,'');
 }
-const APP_VER = '1.0';
+const APP_VER = '1.1';
 function appFileName(){ return 'TheHomeManager-V'+APP_VER+'.html'; }
 const APP_LINK = 'https://skoddy01.github.io/house-shopping/'+appFileName();
 function showAppVer(){
@@ -1477,14 +1478,8 @@ function renderAllocated(){
     </div></section>`;
   }).join('');
 }
-function renderWorkerActs(){
-  const people=workActPeople();
-  if(!workerNames().length) return '<p class="note">Add a Job Worker first, then add their activity here.</p>';
-  if(!people.length) return '<p class="note">That worker is not on the list.</p>';
-  return people.map(w=>{
-    const acts=actsForWorker(w);
-    const phone=workerPhone(w);
-    const list=acts.length?acts.map(a=>`<div class="act-row" data-actid="${esc(a.id)}">
+function actRowHtml(w, a){
+  return `<div class="act-row" data-actid="${esc(a.id)}">
       <div class="act-row-top">
         <div>
           <div class="row-name">${esc(a.name||'Untitled')}</div>
@@ -1502,7 +1497,18 @@ function renderWorkerActs(){
         </div>
       </div>
       ${actLinkBlock(a)}
-    </div>`).join(''):'<p class="meal-lock">No activities yet.</p>';
+    </div>`;
+}
+function renderWorkerActs(){
+  const people=workActPeople();
+  if(!workerNames().length) return '<p class="note">Add a Job Worker first, then add their activity here.</p>';
+  if(!people.length) return '<p class="note">That worker is not on the list.</p>';
+  return people.map(w=>{
+    const acts=actsForWorker(w);
+    const active=acts.filter(a=>!a.done);
+    const done=acts.filter(a=>a.done);
+    const phone=workerPhone(w);
+    const actBlock=(head, list, empty)=>`<div class="weekhead">${head}</div>`+(list.length?list.map(a=>actRowHtml(w,a)).join(''):`<p class="meal-lock">${empty}</p>`);
     return `<section class="aisle job-card"><div class="worker-card">
       <div class="row-name">${esc(w)}</div>
       <div class="work-mob">
@@ -1529,7 +1535,8 @@ function renderWorkerActs(){
         </div>
       </div>
       <div class="job-after-dates">${workerActGantt(w, acts)}</div>
-      ${list}
+      ${actBlock('Active Jobs', active, 'No active jobs.')}
+      ${actBlock('Jobs Completed', done, 'No completed jobs.')}
     </div></section>`;
   }).join('');
 }
